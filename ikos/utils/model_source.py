@@ -38,12 +38,12 @@ class ModelSourceSelector:
         """
         # 如果指定了具体源，直接返回
         if self.preferred != "auto":
-            logger.info(f"使用指定的模型源：{self.preferred}")
+            logger.info("使用指定的模型源：%s", self.preferred)
             return self.preferred
         
         # 使用缓存结果
         if self._cached_result:
-            logger.debug(f"使用缓存的模型源：{self._cached_result}")
+            logger.debug("使用缓存的模型源：%s", self._cached_result)
             return self._cached_result
         
         # 自动检测
@@ -68,17 +68,17 @@ class ModelSourceSelector:
         # 检测魔塔社区
         modelscope_available = self._check_host(self.MODELSCOPE_HOST)
         if modelscope_available:
-            logger.info("✅ 魔塔社区可访问，使用魔塔社区")
+            logger.info("魔塔社区可访问，使用魔塔社区")
             return "modelscope"
         
         # 检测 Hugging Face
         huggingface_available = self._check_host(self.HUGGINGFACE_HOST)
         if huggingface_available:
-            logger.info("✅ Hugging Face 可访问，使用 Hugging Face")
+            logger.info("Hugging Face 可访问，使用 Hugging Face")
             return "huggingface"
         
         # 都不可用，返回默认（魔塔）
-        logger.warning("⚠️  两个模型源都不可访问，默认使用魔塔社区")
+        logger.warning("两个模型源都不可访问，默认使用魔塔社区")
         return "modelscope"
     
     def _check_host(self, host: str, port: int = 443, timeout: float = 3.0) -> bool:

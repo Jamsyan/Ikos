@@ -355,24 +355,24 @@ class ModelCacheManager:
         """打印缓存统计信息。"""
         stats = self.get_cache_stats()
         
-        print("\n" + "=" * 60)
-        print("📊 缓存统计")
-        print("=" * 60)
-        print(f"总模型数：{stats['total_models']}")
-        print(f"总大小：{self._format_size(stats['total_size'])}")
-        print(f"\n按组织统计:")
+        logger.info("=" * 60)
+        logger.info("缓存统计")
+        logger.info("=" * 60)
+        logger.info("总模型数：%d", stats['total_models'])
+        logger.info("总大小：%s", self._format_size(stats['total_size']))
+        logger.info("按组织统计:")
         for org, count in stats['models_by_org'].items():
-            print(f"  {org}: {count} 个模型")
+            logger.info("  %s: %d 个模型", org, count)
         
         if stats['oldest_model']:
-            print(f"\n最早下载：{stats['oldest_model'][0]}")
-            print(f"  时间：{stats['oldest_model'][1]}")
+            logger.info("最早下载：%s", stats['oldest_model'][0])
+            logger.info("  时间：%s", stats['oldest_model'][1])
         
         if stats['newest_model']:
-            print(f"\n最近下载：{stats['newest_model'][0]}")
-            print(f"  时间：{stats['newest_model'][1]}")
+            logger.info("最近下载：%s", stats['newest_model'][0])
+            logger.info("  时间：%s", stats['newest_model'][1])
         
-        print("=" * 60 + "\n")
+        logger.info("=" * 60)
     
     def _format_size(self, size_bytes: int) -> str:
         """格式化文件大小。

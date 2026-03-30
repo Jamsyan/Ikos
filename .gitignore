@@ -72,3 +72,4 @@ config/secrets.yaml
 
 .cursor
 uv.lock
+.idea

@@ -175,7 +175,7 @@ class IkosPipeline:
             "engineered_prompt": engineered_prompt.get("final_prompt", "")
         }
         
-        logger.info(f"第一阶段完成，核心主题：{core_topic}")
+        logger.info("第一阶段完成，核心主题：%s", core_topic)
         return result
     
     def _run_stage2(self, stage1_result: dict[str, Any]) -> dict[str, Any]:
@@ -209,7 +209,7 @@ class IkosPipeline:
             "memo_items": memo_items
         }
         
-        logger.info(f"第二阶段完成，找到 {len(found_data)} 个数据项")
+        logger.info("第二阶段完成，找到 %d 个数据项", len(found_data))
         return result
     
     def _run_stage3(
@@ -259,7 +259,7 @@ class IkosPipeline:
             "rewritten_content": rewritten_content
         }
         
-        logger.info(f"第三阶段完成，知识图谱节点：{len(knowledge_graph.get('nodes', []))}")
+        logger.info("第三阶段完成，知识图谱节点：%d", len(knowledge_graph.get('nodes', [])))
         return result
     
     def _run_stage4(
@@ -295,7 +295,7 @@ class IkosPipeline:
             rewritten_content
         )
         
-        logger.info(f"第四阶段完成，输出 {len(dispatch_result.get('files', []))} 个文件")
+        logger.info("第四阶段完成，输出 %d 个文件", len(dispatch_result.get('files', [])))
         return dispatch_result
     
     def reset(self) -> None:

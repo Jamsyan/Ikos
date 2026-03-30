@@ -36,9 +36,9 @@ class ModelDownloader:
         
         self.source_selector = ModelSourceSelector(preferred_source)
         
-        logger.info(f"模型下载器已初始化")
-        logger.info(f"缓存目录：{self.cache_dir}")
-        logger.info(f"首选模型源：{preferred_source}")
+        logger.info("模型下载器已初始化")
+        logger.info("缓存目录：%s", self.cache_dir)
+        logger.info("首选模型源：%s", preferred_source)
     
     def download(
         self,
@@ -64,8 +64,8 @@ class ModelDownloader:
         """
         source = self.source_selector.detect()
         
-        logger.info(f"开始下载模型：{model_id}")
-        logger.info(f"使用模型源：{source}")
+        logger.info("开始下载模型：%s", model_id)
+        logger.info("使用模型源：%s", source)
         
         if source == "modelscope":
             return self._download_from_modelscope(
@@ -99,7 +99,7 @@ class ModelDownloader:
         try:
             from modelscope import snapshot_download
             
-            logger.info(f"使用魔塔社区下载：{model_id}")
+            logger.info("使用魔塔社区下载：%s", model_id)
             
             # 获取缓存路径
             model_path = self.cache_manager.get_model_path(model_id, revision)
@@ -120,26 +120,26 @@ class ModelDownloader:
             downloaded_path = snapshot_download(**download_kwargs)
             downloaded_path = Path(downloaded_path)
             
-            logger.info(f"模型下载完成：{downloaded_path}")
+            logger.info("模型下载完成：%s", downloaded_path)
             
             # 清理无用文件
             logger.info("清理无用文件（README/LICENSE 等）...")
             cleaned_count = self.cache_manager.cleanup_unwanted_files(downloaded_path)
-            logger.info(f"清理了 {cleaned_count} 个文件")
+            logger.info("清理了 %d 个文件", cleaned_count)
             
             # 验证完整性
             logger.info("验证模型完整性...")
             integrity = self.cache_manager.verify_integrity(downloaded_path)
             
             if integrity["valid"]:
-                logger.info(f"✅ 模型完整性验证通过")
-                logger.info(f"  文件数：{integrity['files_count']}")
-                logger.info(f"  总大小：{self.cache_manager._format_size(integrity['total_size'])}")
-                logger.info(f"  核心文件：{len(integrity['essential_files'])} 个")
+                logger.info("模型完整性验证通过")
+                logger.info("  文件数：%d", integrity['files_count'])
+                logger.info("  总大小：%s", self.cache_manager._format_size(integrity['total_size']))
+                logger.info("  核心文件：%d 个", len(integrity['essential_files']))
             else:
-                logger.warning(f"⚠️  模型完整性验证失败")
+                logger.warning("模型完整性验证失败")
                 for missing in integrity["missing_files"]:
-                    logger.warning(f"  缺失：{missing}")
+                    logger.warning("  缺失：%s", missing)
             
             # 保存元数据
             self.cache_manager.save_metadata(
@@ -189,7 +189,7 @@ class ModelDownloader:
         try:
             from huggingface_hub import snapshot_download
             
-            logger.info(f"使用 Hugging Face 下载：{model_id}")
+            logger.info("使用 Hugging Face 下载：%s", model_id)
             
             # 构建下载参数
             download_kwargs = {
@@ -207,7 +207,7 @@ class ModelDownloader:
             # 执行下载
             model_dir = snapshot_download(**download_kwargs)
             
-            logger.info(f"模型下载完成：{model_dir}")
+            logger.info("模型下载完成：%s", model_dir)
             return Path(model_dir)
             
         except ImportError:
@@ -236,7 +236,7 @@ class ModelDownloader:
             cache_path = self.cache_dir / f"models--{model_id.replace('/', '--')}"
         
         if cache_path.exists():
-            logger.info(f"模型已缓存：{cache_path}")
+            logger.info("模型已缓存：%s", cache_path)
             return cache_path
         
         return None
@@ -253,7 +253,7 @@ class ModelDownloader:
             if cache_path.exists():
                 import shutil
                 shutil.rmtree(cache_path)
-                logger.info(f"已清除模型缓存：{model_id}")
+                logger.info("已清除模型缓存：%s", model_id)
         else:
             # 清除所有缓存
             import shutil

@@ -21,16 +21,11 @@ def setup_logger(
         rotation: 日志轮转大小
         retention: 日志保留时间
     """
-    # 移除默认处理器
     logger.remove()
 
-    # 默认格式
     if format_str is None:
-        format_str = (
-            "{time:YYYY-MM-DD HH:mm:ss} | {level} | {name}:{function}:{line} - {message}"
-        )
+        format_str = "{time:YYYY-MM-DD HH:mm:ss} | {level} | {name}:{function}:{line} - {message}"
 
-    # 控制台输出
     logger.add(
         sys.stderr,
         level=level,
@@ -38,7 +33,6 @@ def setup_logger(
         colorize=True,
     )
 
-    # 文件输出
     if log_file:
         log_path = Path(log_file)
         log_path.parent.mkdir(parents=True, exist_ok=True)

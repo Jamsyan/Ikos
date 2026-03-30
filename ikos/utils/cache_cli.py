@@ -3,6 +3,7 @@
 import sys
 import argparse
 from pathlib import Path
+from loguru import logger
 
 from .cache_manager import ModelCacheManager
 
@@ -18,11 +19,11 @@ def cmd_list(args):
     manager = ModelCacheManager(args.cache_dir)
     
     if not manager.models_dir.exists():
-        print("缓存为空")
+        logger.info("缓存为空")
         return
     
-    print("\n缓存的模型列表:")
-    print("=" * 80)
+    logger.info("缓存的模型列表:")
+    logger.info("=" * 80)
     
     for org_dir in manager.models_dir.iterdir():
         if not org_dir.is_dir():
@@ -48,13 +49,13 @@ def cmd_list(args):
                 
                 downloaded = metadata.get("downloaded_at", "未知")
                 
-                print(f"{org_name}/{model_name}@{revision}")
-                print(f"  路径：{revision_dir}")
-                print(f"  大小：{size_str}")
-                print(f"  下载时间：{downloaded}")
-                print()
+                logger.info("%s/%s@%s", org_name, model_name, revision)
+                logger.info("  路径：%s", revision_dir)
+                logger.info("  大小：%s", size_str)
+                logger.info("  下载时间：%s", downloaded)
+                logger.info("")
     
-    print("=" * 80)
+    logger.info("=" * 80)
 
 
 def cmd_clean(args):
@@ -62,25 +63,22 @@ def cmd_clean(args):
     manager = ModelCacheManager(args.cache_dir)
     
     if args.model:
-        # 清理指定模型
-        print(f"清理模型：{args.model}")
+        logger.info("清理模型：%s", args.model)
         count = manager.clear_cache(model_id=args.model)
-        print(f"已清理 {count} 个模型")
+        logger.info("已清理 %d 个模型", count)
     elif args.days:
-        # 清理旧模型
-        print(f"清理 {args.days} 天前的模型")
+        logger.info("清理 %d 天前的模型", args.days)
         count = manager.clear_cache(older_than_days=args.days)
-        print(f"已清理 {count} 个模型")
+        logger.info("已清理 %d 个模型", count)
     elif args.all:
-        # 清理所有
         confirm = input("确定要清理所有缓存吗？[y/N]: ")
         if confirm.lower() == 'y':
             count = manager.clear_cache()
-            print("已清理所有缓存")
+            logger.info("已清理所有缓存")
         else:
-            print("已取消")
+            logger.info("已取消")
     else:
-        print("请指定清理选项：--model, --days, 或 --all")
+        logger.info("请指定清理选项：--model, --days, 或 --all")
 
 
 def cmd_verify(args):
@@ -88,33 +86,33 @@ def cmd_verify(args):
     manager = ModelCacheManager(args.cache_dir)
     
     if not args.model:
-        print("请指定模型 ID: --model <model_id>")
+        logger.info("请指定模型 ID: --model <model_id>")
         return
     
     model_path = manager.get_model_path(args.model, args.revision or "master")
     
     if not model_path.exists():
-        print(f"模型不存在：{model_path}")
+        logger.info("模型不存在：%s", model_path)
         return
     
-    print(f"验证模型：{args.model}@{args.revision or 'master'}")
-    print(f"路径：{model_path}")
-    print()
+    logger.info("验证模型：%s@%s", args.model, args.revision or "master")
+    logger.info("路径：%s", model_path)
+    logger.info("")
     
     integrity = manager.verify_integrity(model_path)
     
     if integrity["valid"]:
-        print("✅ 完整性验证通过")
+        logger.info("完整性验证通过")
     else:
-        print("❌ 完整性验证失败")
+        logger.info("完整性验证失败")
         for missing in integrity["missing_files"]:
-            print(f"  缺失：{missing}")
+            logger.info("  缺失：%s", missing)
         for error in integrity["errors"]:
-            print(f"  错误：{error}")
+            logger.info("  错误：%s", error)
     
-    print(f"\n文件数：{integrity['files_count']}")
-    print(f"总大小：{manager._format_size(integrity['total_size'])}")
-    print(f"核心文件：{len(integrity['essential_files'])} 个")
+    logger.info("文件数：%d", integrity['files_count'])
+    logger.info("总大小：%s", manager._format_size(integrity['total_size']))
+    logger.info("核心文件：%d 个", len(integrity['essential_files']))
 
 
 def main():
