@@ -1,10 +1,19 @@
-"""第四阶段：输出分流机制.
+"""第四阶段：输出分流机制。
 
-接收结构化数据和知识图谱，根据用户配置分流到不同输出路径。
+接收结构化数据和知识图谱，根据用户配置分流到不同输出路径，最终产出用户所需的文件或数据库记录。
 
 核心机制：
 - 用户配置
 - 模板输出
-- 知识图谱输出
-- 数据库输出
+- 抄成熟方案
 """
+
+from .dispatcher import OutputDispatcher
+from .file_output import FileOutputter
+from .db_output import DatabaseOutputter
+
+__all__ = [
+    "OutputDispatcher",
+    "FileOutputter",
+    "DatabaseOutputter",
+]

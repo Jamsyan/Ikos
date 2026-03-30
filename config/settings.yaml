@@ -5,6 +5,18 @@ model:
   # 默认使用的模型
   default: "qwen3.5:7b"
 
+  # 模型源配置（魔塔社区 / Hugging Face）
+  source:
+    # 模型源选择：auto / modelscope / huggingface
+    # auto: 自动检测网络环境，优先魔塔社区
+    preferred: "auto"
+    
+    # 是否使用缓存
+    use_cache: true
+    
+    # 检测超时时间（秒）
+    timeout: 3.0
+
   # Ollama 配置
   ollama:
     base_url: "http://localhost:11434"

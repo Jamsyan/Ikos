@@ -70,8 +70,6 @@ config/secrets.yaml
 *.log
 *.bak
 
-# UV
+.cursor
 uv.lock
-
-# CI/CD
-.github/
+.idea

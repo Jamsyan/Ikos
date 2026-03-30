@@ -8,6 +8,9 @@ dependencies = [
     # 模型调用
     "ollama>=0.4.0",
     "openai>=1.0.0",
+    # 模型下载（魔塔社区优先）
+    "modelscope>=1.9.0",
+    "huggingface_hub>=0.19.0",
     # 浏览器自动化与网页抓取
     "playwright>=1.40.0",
     # 向量数据库
@@ -25,8 +28,6 @@ dependencies = [
     "coverage>=7.13.5",
     "iniconfig>=2.3.0",
     "pluggy>=1.6.0",
-    "pytest>=9.0.2",
-    "pytest-cov>=7.1.0",
 ]
 
 [project.optional-dependencies]
@@ -55,9 +56,10 @@ dev = [
 
 [project.scripts]
 ikos = "ikos.main:main"
+ikos-cache = "ikos.utils.cache_cli:main"
 
 [[tool.uv.index]]
-url = "http://mirrors.aliyun.com/pypi/simple/"
+url = "https://mirrors.aliyun.com/pypi/simple/"
 default = true
 
 [build-system]
@@ -65,7 +67,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/ikos"]
+packages = ["ikos"]
 
 # Black 格式化配置
 [tool.black]
@@ -85,7 +87,7 @@ exclude = '''
 [tool.ruff]
 line-length = 100
 target-version = "py313"
-src = ["src"]
+src = ["."]
 
 [tool.ruff.lint]
 select = [
@@ -108,7 +110,7 @@ known-first-party = ["ikos"]
 [tool.pyright]
 pythonVersion = "3.13"
 typeCheckingMode = "strict"
-include = ["src"]
+include = ["ikos"]
 exclude = [
     "**/__pycache__",
     ".venv",
@@ -130,4 +132,4 @@ max-line-length = 100
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
-addopts = "-v --cov=src --cov-report=html"
+addopts = "-v --cov=ikos --cov-report=html"

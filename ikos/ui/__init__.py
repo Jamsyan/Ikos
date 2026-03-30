@@ -1,7 +1,5 @@
-"""PyQt6 桌面 UI 模块.
+"""UI 模块 - 桌面应用界面。"""
 
-包含：
-- 主窗口
-- 任务面板
-- 配置面板
-"""
+from .main_window import MainWindow, run_ui
+
+__all__ = ["MainWindow", "run_ui"]
