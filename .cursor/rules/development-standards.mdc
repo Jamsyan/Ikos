@@ -1,8 +1,6 @@
 ---
-description: Ikos 项目开发规范 - UV 环境、注释、日志和汇报标准
 alwaysApply: true
 ---
-
 # Ikos 项目开发规范
 
 ## 1. 环境管理 (UV)
