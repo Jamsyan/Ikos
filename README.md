@@ -192,41 +192,87 @@ Ikos/
 │   ├── models.yaml       # 多模型配置
 │   └── prompts/          # 提示词模板
 ├── data/                 # 数据目录（.gitignore 忽略）
-├── docs/                 # 文档
-└── tests/                # 测试
+├── scripts/              # 工具脚本
+├── tests/                # 测试
+└── docs/                 # 文档（需要时生成）
 ```
 
 ---
 
 ## 📝 开发计划
 
-> 当前进度：**Phase 0 & Phase 1 已完成** ✅
+> 当前进度：**0.1.0 版本已完成** ✅
 
-- [x] **Phase 0: 项目骨架**
-  - [x] 项目配置（pyproject.toml, UV 阿里云镜像）
-  - [x] 开发工具配置（Black, Ruff, Pyright, Pylint）
-  - [x] 目录结构创建
-  - [x] Sphinx 文档系统配置
-- [x] **Phase 1: 核心层实现**
-  - [x] ModelProvider 抽象接口
-  - [x] OllamaProvider 实现
-  - [x] OpenAICompatibleProvider 实现
-  - [x] SearchProvider 抽象接口
-  - [x] PlaywrightSearchProvider 实现
-  - [x] VoteEngine 投票引擎
+### 版本迭代路线（SemVer）
+
+根据架构文档第十四章，版本迭代以语义化版本号为主线：
+
+| 版本 | 阶段含义 | 状态 |
+|------|----------|------|
+| **0.1.0** | 骨架与依赖 - 工程结构、配置、核心抽象、最小竖直流 | ✅ 已完成 |
+| **0.2.0** | 零到一（首条竖流） - 单一入口跑通全流程 | 🚧 开发中 |
+| **0.3.0** | 可观测与可配置 - 日志、运行标识、关键配置 | 📋 计划中 |
+| **0.4.0** | 质量机制加厚 - 多模型投票、迭代检索优先子集 | 📋 计划中 |
+| **0.5.0** | 知识产物 - 图谱结构化视图、向量化输出 | 📋 计划中 |
+| **0.6.0** | 输出与集成 - 多格式分流、数据库写入 | 📋 计划中 |
+| **1.0.0** | 稳定基线 - 官方最小路径与兼容性承诺 | 📋 计划中 |
+
+### 已完成功能（0.1.0）
+
+- ✅ **核心抽象层**
+  - ModelProvider 抽象接口
+  - OllamaProvider 实现
+  - OpenAICompatibleProvider 实现
+  - SearchProvider 抽象接口
+  - PlaywrightSearchProvider 实现
+  - VoteEngine 投票引擎
+
+- ✅ **四阶段业务实现**
+  - 第一阶段：需求解析（Parser, Validator, Supervisor）
+  - 第二阶段：智能检索（TaskSplitter, SearchExecutor, MemoManager）
+  - 第三阶段：数据筛选（InitialFilter, DataMerger, KnowledgeGraphBuilder, DataRefiner）
+  - 第四阶段：输出分流（OutputDispatcher, FileOutputter, DatabaseOutputter）
+
+- ✅ **端到端流程**
+  - IkosPipeline 编排器
+  - 命令行入口工具
+
+- ✅ **配置与工具**
+  - 主配置文件（settings.yaml）
+  - 多模型配置（models.yaml）
+  - 四阶段提示词模板（prompts/）
+  - 日志系统（loguru）
+
+- ✅ **测试**
+  - 单元测试（test_pipeline.py）
+  - 集成测试（test_integration.py）
+
+### 待开发功能
+
 - [ ] **Phase 2: 模型集成**
   - [ ] Ollama 安装指南
   - [ ] 多模型配置测试
-- [ ] **Phase 3: 搜索接入**（已完成 ✅）
-  - [x] Playwright 搜索实现
-  - [x] 多引擎适配
-- [ ] **Phase 4: 四阶段业务实现**
-  - [ ] 第一阶段：需求解析
-  - [ ] 第二阶段：智能检索
-  - [ ] 第三阶段：数据筛选
-  - [ ] 第四阶段：输出分流
+  - [ ] 真实投票机制实现
+
+- [ ] **Phase 3: 搜索优化**
+  - [ ] 多引擎自动切换
+  - [ ] 搜索频率限制处理
+
+- [ ] **Phase 4: 数据库集成**
+  - [ ] Chroma 向量库连接
+  - [ ] Neo4j 图数据库连接
+  - [ ] 真实数据入库
+
 - [ ] **Phase 5: UI 开发**
+  - [ ] PyQt6 主窗口
+  - [ ] 任务管理面板
+  - [ ] 配置面板
+  - [ ] 进度可视化
+
 - [ ] **Phase 6: 测试与优化**
+  - [ ] 性能基准测试
+  - [ ] 4GB 显存极限测试
+  - [ ] 文档完善
 
 ---
 

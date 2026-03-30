@@ -1,0 +1,212 @@
+---
+description: Ikos 项目开发规范 - UV 环境、注释、日志和汇报标准
+alwaysApply: true
+---
+
+# Ikos 项目开发规范
+
+## 1. 环境管理 (UV)
+
+### 依赖安装
+- ✅ **必须使用** `uv add <package>` 添加依赖
+- ❌ **禁止使用** `uv pip install` 或 `pip install`
+
+```bash
+# ✅ 正确
+uv add requests
+uv add --dev pytest
+
+# ❌ 错误
+uv pip install requests
+pip install requests
+```
+
+### 依赖删除
+- ✅ **必须使用** `uv remove <package>` 删除依赖
+
+```bash
+# ✅ 正确
+uv remove requests
+
+# ❌ 错误
+uv pip uninstall requests
+pip uninstall requests
+```
+
+### 原因
+使用 `uv add` 会将依赖写入 `pyproject.toml`，确保项目依赖可追踪和可复现。
+
+---
+
+## 2. 注释规范
+
+### 原则
+- **不写废话**：开发者有技术功底，不需要基础教程
+- **不解释代码在做什么**：代码本身应该自解释
+- **只写关键意图**：为什么这么做，有什么坑，特殊考虑
+
+### 示例
+
+```python
+# ❌ 坏注释 - 解释代码在做什么
+def calculate_total(items):
+    # 遍历所有商品
+    total = 0
+    for item in items:
+        # 把价格加起来
+        total += item.price
+    return total
+
+# ✅ 好注释 - 解释为什么
+def calculate_total(items):
+    # 使用 Decimal 避免浮点数精度问题 (Issue #123)
+    total = Decimal('0.00')
+    for item in items:
+        total += item.price
+    return total
+```
+
+```python
+# ❌ 坏注释 - 教程式
+# 这里我们使用 requests 库来发送 HTTP 请求
+# timeout 参数设置为 5 秒防止请求卡住
+response = requests.get(url, timeout=5)
+
+# ✅ 好注释 - 关键信息
+# 超时设置为 5s - API 平均响应 200ms，5s 足够处理慢查询
+response = requests.get(url, timeout=5)
+```
+
+```python
+# ❌ 坏注释 - 显而易见
+if user.is_active:  # 如果用户是激活状态
+    process_user(user)
+
+# ✅ 好注释 - 业务逻辑说明
+# 只有激活用户才能处理，未激活用户走审核流程 (见 auth.py:handle_pending)
+if user.is_active:
+    process_user(user)
+```
+
+### 什么时候写注释
+1. **反直觉的代码**：为什么不用更简单的方法
+2. **性能优化**：这里为什么这么优化
+3. **业务规则**：特殊业务逻辑的来龙去脉
+4. **坑和边界条件**：这里容易出错，需要注意什么
+5. **外部依赖**：为什么用这个库，有什么替代方案
+
+---
+
+## 3. 日志规范
+
+### 原则
+- ✅ **优先使用 logging 模块**
+- ❌ **禁止滥用 print**：只允许在 CLI 工具输出、调试临时代码使用
+
+### 示例
+
+```python
+import logging
+
+logger = logging.getLogger(__name__)
+
+# ❌ 坏代码 - 使用 print
+def process_data(data):
+    print("开始处理数据")
+    print(f"数据量：{len(data)}")
+    if not data:
+        print("数据为空")
+        return
+    print("处理完成")
+
+# ✅ 好代码 - 使用 logging
+def process_data(data):
+    logger.info("开始处理数据，总量：%d", len(data))
+    if not data:
+        logger.warning("数据为空，跳过处理")
+        return
+    logger.info("数据处理完成")
+```
+
+### 日志级别使用
+- **DEBUG**: 调试信息，开发时使用
+- **INFO**: 正常业务流程的关键节点
+- **WARNING**: 不影响流程的异常情况
+- **ERROR**: 导致操作失败的错误
+- **CRITICAL**: 系统级严重错误
+
+### 日志格式
+```python
+# ✅ 使用参数化格式
+logger.info("用户 %s 登录成功，IP: %s", user_id, ip_address)
+
+# ❌ 避免字符串拼接
+logger.info(f"用户 {user_id} 登录成功，IP: {ip_address}")
+```
+
+---
+
+## 4. 任务汇报规范
+
+### 原则
+- ✅ **在对话中直接汇报**：完成任务后在对话中说明
+- ❌ **不生成报告文件**：禁止创建 `report.txt`、`summary.md` 等汇报文件
+
+### 示例
+
+```python
+# ❌ 错误 - 生成报告文件
+with open("task_report.md", "w") as f:
+    f.write("# 任务完成报告\n- 完成了功能 A\n- 修复了 bug B")
+
+# ✅ 正确 - 在对话中汇报
+# 任务完成：
+# 1. 实现了用户认证功能 (auth.py)
+# 2. 修复了数据加载 bug (loader.py:45)
+# 3. 添加了单元测试 (tests/test_auth.py)
+```
+
+### 原因
+避免对话历史中堆积大量一次性报告文件，保持代码库整洁。
+
+---
+
+## 5. 代码风格补充
+
+### 其他要求
+- **使用中文注释**：注释使用中文，但技术术语保持英文
+- **不使用表情符号**：代码和注释中不使用 emoji
+- **类型注解**：公共 API 必须添加类型注解
+- **文档字符串**：公共函数/类必须写 docstring
+
+```python
+# ✅ 好代码 - 符合所有规范
+from typing import Optional
+import logging
+
+logger = logging.getLogger(__name__)
+
+
+def authenticate_user(username: str, password: str) -> Optional[str]:
+    """
+    验证用户凭据并返回 JWT token。
+    
+    Args:
+        username: 用户名
+        password: 明文密码
+        
+    Returns:
+        验证成功返回 JWT token，失败返回 None
+        
+    Note:
+        密码会在内部进行哈希处理后与数据库比对
+    """
+    # 使用 bcrypt 而非 MD5 - 安全要求 (SEC-001)
+    if not verify_password(username, password):
+        logger.warning("用户 %s 认证失败", username)
+        return None
+    
+    token = generate_jwt(username)
+    logger.info("用户 %s 认证成功", username)
+    return token
+```
