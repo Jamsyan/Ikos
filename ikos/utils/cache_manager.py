@@ -1,4 +1,4 @@
-"""模型缓存管理器 - 专注魔塔社区."""
+"""模型缓存管理器 - 专注魔塔社区。"""
 
 import json
 import shutil
@@ -10,30 +10,14 @@ from loguru import logger
 
 
 class ModelCacheManager:
-    """魔塔社区模型缓存管理器。
+    """魔塔社区模型缓存管理器。"""
     
-    核心功能：
-    1. 统一的缓存目录结构
-    2. 版本管理
-    3. 文件整理（清理 README/LICENSE 等）
-    4. 完整性验证
-    5. 空间统计
-    6. 清理工具
-    """
-    
-    # 魔塔缓存根目录
     CACHE_ROOT = Path.home() / ".cache" / "ikos"
-    
-    # 模型缓存目录
     MODELS_DIR = CACHE_ROOT / "models" / "modelscope"
-    
-    # 临时目录
     TEMP_DIR = CACHE_ROOT / "temp"
-    
-    # 元数据文件
     METADATA_FILE = "metadata.json"
     
-    # 需要清理的文件模式
+    # 清理无用文件，保留核心模型文件
     UNWANTED_PATTERNS = [
         "README.md",
         "README_zh.md",
@@ -42,39 +26,32 @@ class ModelCacheManager:
         "NOTICE",
         ".gitignore",
         "*.git",
-        "*.md",  # 所有 markdown 文件
+        "*.md",
     ]
     
-    # 核心模型文件（必须保留）
+    # 核心模型文件模式
     ESSENTIAL_PATTERNS = [
-        "*.json",  # 配置文件
-        "*.bin",   # PyTorch 模型
-        "*.safetensors",  # SafeTensors 格式
-        "*.pt",    # PyTorch 检查点
-        "*.pth",   # PyTorch 模型
-        "*.onnx",  # ONNX 格式
-        "*.txt",   # 词汇表等
-        "*.vocab", # 词汇表
-        "*.model", # SentencePiece 模型
+        "*.json",
+        "*.bin",
+        "*.safetensors",
+        "*.pt",
+        "*.pth",
+        "*.onnx",
+        "*.txt",
+        "*.vocab",
+        "*.model",
     ]
     
     def __init__(self, cache_dir: str | Path | None = None):
-        """初始化缓存管理器。
-        
-        Args:
-            cache_dir: 自定义缓存目录（可选）
-        """
+        """初始化缓存管理器。"""
         self.cache_root = Path(cache_dir) if cache_dir else self.CACHE_ROOT
         self.models_dir = self.cache_root / "models" / "modelscope"
         self.temp_dir = self.cache_root / "temp"
         
-        # 确保目录存在
         self.models_dir.mkdir(parents=True, exist_ok=True)
         self.temp_dir.mkdir(parents=True, exist_ok=True)
         
-        logger.info(f"缓存管理器已初始化")
-        logger.info(f"缓存根目录：{self.cache_root}")
-        logger.info(f"模型目录：{self.models_dir}")
+        logger.info("缓存管理器已初始化，目录：%s", self.cache_root)
     
     def get_model_path(
         self,
@@ -142,7 +119,7 @@ class ModelCacheManager:
         with open(metadata_file, "w", encoding="utf-8") as f:
             json.dump(metadata, f, ensure_ascii=False, indent=2)
         
-        logger.debug(f"元数据已保存：{metadata_file}")
+        logger.debug("元数据已保存：{metadata_file}")
     
     def load_metadata(self, model_path: Path) -> dict[str, Any]:
         """加载模型元数据。
@@ -199,12 +176,12 @@ class ModelCacheManager:
             if should_remove:
                 try:
                     file.unlink()
-                    logger.debug(f"清理文件：{file}")
+                    logger.debug("清理文件：{file}")
                     cleaned_count += 1
                 except Exception as e:
-                    logger.warning(f"清理文件失败 {file}: {e}")
+                    logger.warning("清理文件失败 {file}: {e}")
         
-        logger.info(f"清理完成，共清理 {cleaned_count} 个文件")
+        logger.info("清理完成，共清理 {cleaned_count} 个文件")
         return cleaned_count
     
     def verify_integrity(self, model_path: Path) -> dict[str, Any]:
@@ -334,7 +311,7 @@ class ModelCacheManager:
             model_path = self.get_model_path(model_id)
             if model_path.exists():
                 shutil.rmtree(model_path)
-                logger.info(f"已清除模型：{model_id}")
+                logger.info("已清除模型：{model_id}")
                 cleaned_count = 1
         elif older_than_days:
             # 清除旧模型
@@ -360,10 +337,10 @@ class ModelCacheManager:
                                     download_time = datetime.fromisoformat(downloaded_at).timestamp()
                                     if download_time < cutoff_date:
                                         shutil.rmtree(revision_dir)
-                                        logger.info(f"清除旧模型：{revision_dir}")
+                                        logger.info("清除旧模型：{revision_dir}")
                                         cleaned_count += 1
                                 except Exception as e:
-                                    logger.warning(f"解析时间失败：{e}")
+                                    logger.warning("解析时间失败：{e}")
         else:
             # 清除所有
             if self.models_dir.exists():
