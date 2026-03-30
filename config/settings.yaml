@@ -1,0 +1,74 @@
+# Ikos 主配置文件
+
+# 模型配置
+model:
+  # 默认使用的模型
+  default: "qwen3.5:7b"
+
+  # Ollama 配置
+  ollama:
+    base_url: "http://localhost:11434"
+    timeout: 120
+
+  # OpenAI 兼容 API 配置（可用于 Ollama 或其他）
+  openai_compatible:
+    base_url: "http://localhost:11434/v1"
+    api_key: "ollama"
+
+# 搜索配置
+search:
+  # 默认搜索引擎 (auto/google/bing/baidu/duckduckgo)
+  default_engine: "auto"
+
+  # 最大搜索结果数
+  max_results: 10
+
+  # 浏览器配置
+  browser:
+    headless: true
+    timeout: 30000
+
+# 向量数据库配置
+vector_db:
+  # 类型 (chroma/milvus)
+  type: "chroma"
+
+  # Chroma 配置
+  chroma:
+    persist_directory: "./data/vector_db/chroma"
+
+  # Milvus 配置
+  milvus:
+    uri: "./data/vector_db/milvus.db"
+
+# 图数据库配置
+graph_db:
+  # 类型 (neo4j)
+  type: "neo4j"
+
+  # Neo4j 配置
+  neo4j:
+    uri: "bolt://localhost:7687"
+    username: "neo4j"
+    password: "password"
+
+# 输出配置
+output:
+  # 默认输出目录
+  directory: "./data/output"
+
+  # 默认输出格式
+  default_formats:
+    - "json"
+    - "markdown"
+
+  # 知识图谱输出格式
+  knowledge_graph_format: "json"
+
+# 日志配置
+logging:
+  level: "INFO"
+  format: "{time:YYYY-MM-DD HH:mm:ss} | {level} | {name}:{function}:{line} - {message}"
+  file: "./data/logs/ikos.log"
+  rotation: "100 MB"
+  retention: "7 days"

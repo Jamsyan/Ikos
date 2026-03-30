@@ -4,4 +4,130 @@ version = "0.1.0"
 description = "Intelligent Knowledge Building System - From web information to structured knowledge"
 readme = "README.md"
 requires-python = ">=3.13"
-dependencies = []
+dependencies = [
+    # 模型调用
+    "ollama>=0.4.0",
+    "openai>=1.0.0",
+    # 浏览器自动化与网页抓取
+    "playwright>=1.40.0",
+    # 向量数据库
+    "chromadb>=0.4.0",
+    "pymilvus>=2.3.0",
+    # 图数据库
+    "neo4j>=5.0.0",
+    # 桌面 UI
+    "pyqt6>=6.6.0",
+    # 配置与数据验证
+    "pyyaml>=6.0",
+    "pydantic>=2.0.0",
+    # 日志
+    "loguru>=0.7.0",
+    "coverage>=7.13.5",
+    "iniconfig>=2.3.0",
+    "pluggy>=1.6.0",
+    "pytest>=9.0.2",
+    "pytest-cov>=7.1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    # 文档生成
+    "sphinx>=7.0.0",
+    "sphinx-autobuild>=2024.0.0",
+    "myst-parser>=2.0.0",
+    
+    # 代码格式化
+    "black>=24.0.0",
+    
+    # 代码检查与导入优化
+    "ruff>=0.3.0",
+    
+    # 类型检查
+    "pyright>=1.1.0",
+    
+    # 代码质量检查
+    "pylint>=3.0.0",
+    
+    # 测试框架
+    "pytest>=8.0.0",
+    "pytest-cov>=4.0.0",
+]
+
+[project.scripts]
+ikos = "ikos.main:main"
+
+[[tool.uv.index]]
+url = "http://mirrors.aliyun.com/pypi/simple/"
+default = true
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ikos"]
+
+# Black 格式化配置
+[tool.black]
+line-length = 100
+target-version = ['py313']
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+# Ruff 代码检查配置
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+src = ["src"]
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # Pyflakes
+    "I",    # isort (导入排序)
+    "B",    # flake8-bugbear
+    "C4",   # flake8-comprehensions
+    "UP",   # pyupgrade
+]
+ignore = [
+    "E501",  # line too long (由 black 处理)
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["ikos"]
+
+# Pyright 类型检查配置
+[tool.pyright]
+pythonVersion = "3.13"
+typeCheckingMode = "strict"
+include = ["src"]
+exclude = [
+    "**/__pycache__",
+    ".venv",
+    "build",
+    "dist",
+]
+
+# Pylint 配置
+[tool.pylint.messages_control]
+disable = [
+    "C0114",  # missing-module-docstring
+    "C0116",  # missing-function-docstring
+    "R0903",  # too-few-public-methods
+]
+
+[tool.pylint.format]
+max-line-length = 100
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "-v --cov=src --cov-report=html"

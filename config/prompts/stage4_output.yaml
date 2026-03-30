@@ -1,0 +1,80 @@
+# 第四阶段：输出分流 - 提示词模板
+
+# Markdown 文档生成提示词
+markdown_generation: |
+  你是一个专业文档撰写专家。请根据以下材料生成 Markdown 文档：
+
+  结构化数据：{structured_data}
+  知识图谱：{knowledge_graph}
+
+  文档要求：
+  1. 结构清晰，层次分明
+  2. 包含目录、章节、子章节
+  3. 适当使用表格、列表、代码块
+  4. 关键概念加粗或高亮
+  5. 包含参考资料和来源
+
+  文档模板：
+  {template}
+
+  请开始撰写：
+
+# PDF 转换提示词
+pdf_preparation: |
+  请准备用于 PDF 转换的内容：
+
+  Markdown 内容：{markdown_content}
+
+  注意事项：
+  1. 确保格式兼容 PDF 转换
+  2. 检查特殊字符和编码
+  3. 确保目录结构清晰
+  4. 添加适当的分页标记
+
+# JSON 输出提示词
+json_output: |
+  请将以下数据转换为标准 JSON 格式：
+
+  结构化数据：{structured_data}
+  知识图谱：{knowledge_graph}
+
+  JSON Schema：
+  {schema}
+
+  请确保：
+  1. 符合指定的 Schema
+  2. 所有字段类型正确
+  3. 包含必要的元数据
+  4. 使用 UTF-8 编码
+
+# 数据库输出提示词
+database_output: |
+  请将以下数据转换为数据库记录：
+
+  结构化数据：{structured_data}
+  知识图谱：{knowledge_graph}
+  数据库类型：{db_type}
+
+  数据库 Schema：
+  {schema}
+
+  请生成：
+  1. 表结构定义（DDL）
+  2. 数据插入语句
+  3. 索引定义
+  4. 关系映射
+
+# 用户配置读取提示词
+config_reading: |
+  请读取并解析用户输出配置：
+
+  配置文件：{config_file}
+
+  需要提取的配置项：
+  1. 输出类型（文件/数据库）
+  2. 输出格式（MD/PDF/JSON/...）
+  3. 输出路径
+  4. 输出模板
+  5. 输出内容范围
+
+  请以结构化格式返回配置信息。

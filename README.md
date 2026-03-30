@@ -4,7 +4,7 @@
 
 从网络信息到结构化知识 — 多轮 AI 深度挖掘与重构平台。
 
-[![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](LICENSE) [![Status](https://img.shields.io/badge/status-architecture%20design-yellow.svg)]()
+[![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](LICENSE) [![Status](https://img.shields.io/badge/status-development-green.svg)]()
 
 ---
 
@@ -128,12 +128,10 @@ flowchart TB
 
 ## 🚀 快速开始
 
-> ⚠️ **当前状态**：架构设计完成，开发实施中
-
 ### 环境要求
 
-- Python 3.10+
-- （待补充：具体依赖）
+- Python 3.13+
+- UV 包管理器（可选，推荐）
 
 ### 安装步骤
 
@@ -147,11 +145,24 @@ python -m venv .venv
 source .venv/bin/activate  # Linux/macOS
 .venv\Scripts\activate     # Windows
 
-# 安装依赖
-pip install -r requirements.txt
+# 使用 UV 安装依赖（推荐，阿里云镜像加速）
+uv pip install -e ".[dev]"
+
+# 或使用 pip
+pip install -e ".[dev]"
 ```
 
-### 使用示例
+### 安装 Playwright 浏览器
+
+```bash
+playwright install
+```
+
+### 运行测试
+
+```bash
+pytest
+```
 
 ```bash
 # 运行主程序
@@ -164,38 +175,58 @@ python main.py
 
 ```
 Ikos/
-├── README.md              # 英文文档（主）
-├── README_zh.md           # 中文文档
-├── LICENSE                # AGPL-3.0 许可证
-├── 智能知识构建系统架构文档.md  # 完整架构文档
-├── main.py                # 主程序入口
-├── pyproject.toml         # 项目配置
-├── .python-version        # Python 版本
-└── (待补充)               # TODO: 模块目录
+├── README.md              # 项目说明
+├── pyproject.toml         # 项目配置（依赖、工具配置）
+├── .pre-commit-config.yaml # Git 钩子配置
+├── .gitignore            # Git 忽略文件
+├── src/ikos/             # 源代码
+│   ├── core/             # 核心抽象接口
+│   ├── stage1_requirement/  # 第一阶段：需求解析
+│   ├── stage2_search/       # 第二阶段：智能检索
+│   ├── stage3_filter/       # 第三阶段：数据筛选
+│   ├── stage4_output/       # 第四阶段：输出分流
+│   ├── ui/                 # UI 模块
+│   └── utils/              # 工具函数
+├── config/               # 配置文件
+│   ├── settings.yaml     # 主配置
+│   ├── models.yaml       # 多模型配置
+│   └── prompts/          # 提示词模板
+├── data/                 # 数据目录（.gitignore 忽略）
+├── docs/                 # 文档
+└── tests/                # 测试
 ```
 
 ---
 
 ## 📝 开发计划
 
-> 本项目采用 AI 辅助开发模式，以下为规划中的核心模块
+> 当前进度：**Phase 0 & Phase 1 已完成** ✅
 
-- [ ] **第一阶段：需求解析机制**
-  - [ ] 多轮提示词构建
-  - [ ] 旁系监督系统
-  - [ ] 网络验证集成
-- [ ] **第二阶段：智能检索机制**
-  - [ ] 多模型拆分搜索
-  - [ ] 多品审核系统
-  - [ ] 备忘录迭代评审
-- [ ] **第三阶段：数据筛选机制**
-  - [ ] 分合策略实现
-  - [ ] 多模型投票系统
-  - [ ] 知识图谱构建
-- [ ] **第四阶段：输出分流机制**
-  - [ ] 用户配置界面
-  - [ ] 模板输出系统
-  - [ ] 数据库输出模块
+- [x] **Phase 0: 项目骨架**
+  - [x] 项目配置（pyproject.toml, UV 阿里云镜像）
+  - [x] 开发工具配置（Black, Ruff, Pyright, Pylint）
+  - [x] 目录结构创建
+  - [x] Sphinx 文档系统配置
+- [x] **Phase 1: 核心层实现**
+  - [x] ModelProvider 抽象接口
+  - [x] OllamaProvider 实现
+  - [x] OpenAICompatibleProvider 实现
+  - [x] SearchProvider 抽象接口
+  - [x] PlaywrightSearchProvider 实现
+  - [x] VoteEngine 投票引擎
+- [ ] **Phase 2: 模型集成**
+  - [ ] Ollama 安装指南
+  - [ ] 多模型配置测试
+- [ ] **Phase 3: 搜索接入**（已完成 ✅）
+  - [x] Playwright 搜索实现
+  - [x] 多引擎适配
+- [ ] **Phase 4: 四阶段业务实现**
+  - [ ] 第一阶段：需求解析
+  - [ ] 第二阶段：智能检索
+  - [ ] 第三阶段：数据筛选
+  - [ ] 第四阶段：输出分流
+- [ ] **Phase 5: UI 开发**
+- [ ] **Phase 6: 测试与优化**
 
 ---
 
