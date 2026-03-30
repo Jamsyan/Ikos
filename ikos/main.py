@@ -9,6 +9,12 @@ from ikos.utils.logger import setup_logger
 
 def main():
     """Ikos 主函数。"""
+    # 检查是否启动 UI
+    if len(sys.argv) > 1 and sys.argv[1] in ["--ui", "-u"]:
+        from ikos.ui import run_ui
+        run_ui()
+        return
+    
     setup_logger(log_file="./data/logs/ikos.log", level="INFO")
     
     logger.info("=" * 60)
@@ -17,10 +23,12 @@ def main():
     logger.info("=" * 60)
     
     if len(sys.argv) < 2:
-        logger.info("用法：ikos <用户输入> [输出配置]")
+        logger.info("用法：ikos <用户输入> [选项]")
+        logger.info("选项:")
+        logger.info("  --ui, -u    启动图形界面")
         logger.info("示例:")
         logger.info("  ikos '我想知道傅里叶变换的数学知识'")
-        logger.info("  ikos '量子力学基础概念' --output-format json,markdown")
+        logger.info("  ikos --ui")
         sys.exit(1)
     
     user_input = sys.argv[1]
