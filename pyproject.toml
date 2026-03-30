@@ -58,6 +58,7 @@ dev = [
 
 [project.scripts]
 ikos = "ikos.main:main"
+ikos-cache = "ikos.utils.cache_cli:main"
 
 [[tool.uv.index]]
 url = "http://mirrors.aliyun.com/pypi/simple/"

@@ -6,6 +6,7 @@
 - 文件操作
 - 数据序列化
 - 模型源选择
+- 缓存管理
 """
 
 from .config_loader import load_config, load_yaml
@@ -16,6 +17,7 @@ from .model_source import (
     is_modelscope,
     is_huggingface,
 )
+from .cache_manager import ModelCacheManager, get_cache_manager
 
 __all__ = [
     "load_config",
@@ -25,4 +27,6 @@ __all__ = [
     "get_model_source",
     "is_modelscope",
     "is_huggingface",
+    "ModelCacheManager",
+    "get_cache_manager",
 ]

@@ -1,4 +1,4 @@
-"""模型下载器 - 支持魔塔社区和 Hugging Face."""
+"""模型下载器 - 专注魔塔社区，集成缓存管理."""
 
 import os
 from pathlib import Path
@@ -6,13 +6,17 @@ from typing import Any
 from loguru import logger
 
 from .model_source import ModelSourceSelector, ModelSourceType
+from .cache_manager import ModelCacheManager
 
 
 class ModelDownloader:
     """模型下载器。
     
-    支持从魔塔社区或 Hugging Face 下载模型，
-    自动选择最优源，支持断点续传。
+    专注魔塔社区模型下载，集成缓存管理：
+    - 自动清理无用文件（README/LICENSE 等）
+    - 版本管理
+    - 完整性验证
+    - 空间统计
     """
     
     def __init__(
@@ -26,8 +30,9 @@ class ModelDownloader:
             cache_dir: 模型缓存目录
             preferred_source: 首选模型源
         """
-        self.cache_dir = Path(cache_dir) if cache_dir else Path.home() / ".cache" / "ikos" / "models"
-        self.cache_dir.mkdir(parents=True, exist_ok=True)
+        # 使用缓存管理器
+        self.cache_manager = ModelCacheManager(cache_dir)
+        self.cache_dir = self.cache_manager.models_dir
         
         self.source_selector = ModelSourceSelector(preferred_source)
         
@@ -96,11 +101,14 @@ class ModelDownloader:
             
             logger.info(f"使用魔塔社区下载：{model_id}")
             
+            # 获取缓存路径
+            model_path = self.cache_manager.get_model_path(model_id, revision)
+            
             # 构建下载参数
             download_kwargs = {
                 "model_id": model_id,
                 "revision": revision,
-                "cache_dir": str(self.cache_dir),
+                "cache_dir": str(self.cache_manager.cache_root),
             }
             
             if allow_patterns:
@@ -109,10 +117,43 @@ class ModelDownloader:
                 download_kwargs["exclude"] = ignore_patterns
             
             # 执行下载
-            model_dir = snapshot_download(**download_kwargs)
+            downloaded_path = snapshot_download(**download_kwargs)
+            downloaded_path = Path(downloaded_path)
             
-            logger.info(f"模型下载完成：{model_dir}")
-            return Path(model_dir)
+            logger.info(f"模型下载完成：{downloaded_path}")
+            
+            # 清理无用文件
+            logger.info("清理无用文件（README/LICENSE 等）...")
+            cleaned_count = self.cache_manager.cleanup_unwanted_files(downloaded_path)
+            logger.info(f"清理了 {cleaned_count} 个文件")
+            
+            # 验证完整性
+            logger.info("验证模型完整性...")
+            integrity = self.cache_manager.verify_integrity(downloaded_path)
+            
+            if integrity["valid"]:
+                logger.info(f"✅ 模型完整性验证通过")
+                logger.info(f"  文件数：{integrity['files_count']}")
+                logger.info(f"  总大小：{self.cache_manager._format_size(integrity['total_size'])}")
+                logger.info(f"  核心文件：{len(integrity['essential_files'])} 个")
+            else:
+                logger.warning(f"⚠️  模型完整性验证失败")
+                for missing in integrity["missing_files"]:
+                    logger.warning(f"  缺失：{missing}")
+            
+            # 保存元数据
+            self.cache_manager.save_metadata(
+                downloaded_path,
+                model_id,
+                revision,
+                download_info={
+                    "source": "modelscope",
+                    "cleaned_files": cleaned_count,
+                    "integrity": integrity
+                }
+            )
+            
+            return downloaded_path
             
         except ImportError:
             logger.error("modelscope 库未安装，请运行：pip install modelscope")
