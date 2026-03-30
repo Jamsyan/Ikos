@@ -8,6 +8,9 @@ dependencies = [
     # 模型调用
     "ollama>=0.4.0",
     "openai>=1.0.0",
+    # 模型下载（魔塔社区优先）
+    "modelscope>=1.9.0",
+    "huggingface_hub>=0.19.0",
     # 浏览器自动化与网页抓取
     "playwright>=1.40.0",
     # 向量数据库
