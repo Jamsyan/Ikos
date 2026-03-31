@@ -27,6 +27,31 @@ model:
     base_url: "http://localhost:11434/v1"
     api_key: "ollama"
 
+# 原生引擎配置（新增）
+native_engine:
+  # 是否启用原生引擎
+  enabled: true
+  
+  # 量化等级 (NF4/INT4/INT8/FP16/FP32, auto=自动推荐)
+  quantization: "auto"
+  
+  # 显存保留比例 (0.1 = 10%)
+  memory_reserve_ratio: 0.1
+  
+  # CPU-GPU 混合推理阈值
+  # 当显存不足时自动启用 CPU 卸载
+  cpu_offload_threshold_gb: 4
+  
+  # 模型缓存目录
+  cache_dir: "./data/models"
+  
+  # 自动检测硬件
+  auto_detect_hardware: true
+  
+  # 引擎模式 (auto/native/ollama/openai)
+  # auto: 根据硬件自动选择
+  engine_mode: "auto"
+
 # 搜索配置
 search:
   # 默认搜索引擎 (auto/google/bing/baidu/duckduckgo)

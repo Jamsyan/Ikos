@@ -14,6 +14,40 @@ default_model: &default_model
   temperature: 0.7
   max_tokens: 2048
 
+# 原生引擎模型配置（新增）
+native_models:
+  # 主力模型（推荐）
+  main:
+    name: "Qwen/Qwen2.5-7B-Instruct"
+    source: "modelscope"  # 魔塔社区
+    quantization: "NF4"
+    temperature: 0.7
+    max_tokens: 2048
+  
+  # 轻量模型（极限场景）
+  lightweight:
+    name: "Qwen/Qwen2.5-3B-Instruct"
+    source: "modelscope"
+    quantization: "INT4"
+    temperature: 0.7
+    max_tokens: 1024
+  
+  # 高性能模型（性能场景）
+  performance:
+    name: "Qwen/Qwen2.5-14B-Instruct"
+    source: "modelscope"
+    quantization: "FP16"
+    temperature: 0.7
+    max_tokens: 4096
+  
+  # 推理模型（复杂任务）
+  reasoning:
+    name: "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B"
+    source: "modelscope"
+    quantization: "NF4"
+    temperature: 0.5
+    max_tokens: 4096
+
 # 多模型投票配置（0.2.0+ 版本使用）
 multi_model_config:
   # 拆分模型组（3 个）
