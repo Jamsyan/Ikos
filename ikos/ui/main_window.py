@@ -1,6 +1,7 @@
-"""主窗口 - 简约风格 UI."""
+"""主窗口 - 完整重构版."""
 
 import sys
+from loguru import logger
 from PyQt6.QtWidgets import (
     QApplication,
     QMainWindow,
@@ -11,17 +12,25 @@ from PyQt6.QtWidgets import (
     QLineEdit,
     QPushButton,
     QLabel,
-    QSplitter,
+    QFrame,
     QComboBox,
     QCheckBox,
     QGroupBox,
     QProgressBar,
-    QFrame,
+    QMessageBox,
 )
-from PyQt6.QtCore import Qt, QThread, pyqtSignal
+from PyQt6.QtCore import Qt, QThread, pyqtSignal, QTimer
 from PyQt6.QtGui import QFont
 
 from ikos.core.pipeline import IkosPipeline
+from ikos.core import (
+    detect_hardware,
+    create_native_engine,
+    EngineType,
+    NativeModelLoader,
+)
+from ikos.ui.config_manager import UIConfigManager
+from ikos.ui.components import HardwareMonitorPanel, ModelManagerPanel, StageIndicator
 
 
 class WorkerThread(QThread):
@@ -29,6 +38,7 @@ class WorkerThread(QThread):
 
     log_signal = pyqtSignal(str, str)
     stage_signal = pyqtSignal(str)
+    progress_signal = pyqtSignal(int)
     finished = pyqtSignal(dict)
     error = pyqtSignal(str)
 
@@ -47,18 +57,31 @@ class WorkerThread(QThread):
 
 
 class MainWindow(QMainWindow):
-    """Ikos 主窗口 - 简约风格."""
+    """Ikos 主窗口 - 完整重构版."""
 
     def __init__(self):
         super().__init__()
+        self.config_manager = UIConfigManager()
         self.pipeline = None
         self.worker = None
-        self.init_ui()
+        self.hardware_info = None
+        
+        self._init_hardware()
+        self._init_ui()
+        self._load_config()
 
-    def init_ui(self):
+    def _init_hardware(self) -> None:
+        """初始化硬件检测."""
+        try:
+            self.hardware_info = detect_hardware()
+            logger.info(f"硬件检测完成：{self.hardware_info.tier.value}")
+        except Exception as e:
+            logger.error(f"硬件检测失败：{e}")
+
+    def _init_ui(self) -> None:
         """初始化 UI."""
         self.setWindowTitle("Ikos - 智能知识构建系统")
-        self.setGeometry(100, 100, 1200, 800)
+        self._center_window()
 
         central = QWidget()
         self.setCentralWidget(central)
@@ -68,20 +91,21 @@ class MainWindow(QMainWindow):
         layout.setContentsMargins(0, 0, 0, 0)
 
         # 顶部栏
-        header = self.create_header()
+        header = self._create_header()
         layout.addWidget(header)
 
-        # 主体内容（无分割线）
+        # 主体内容
         content = QWidget()
         content_layout = QHBoxLayout(content)
         content_layout.setSpacing(0)
         content_layout.setContentsMargins(0, 0, 0, 0)
 
-        # 左侧面板
-        left = self.create_left_panel()
-        content_layout.addWidget(left)
+        # 左侧面板（350px）
+        left_panel = self._create_left_panel()
+        left_panel.setFixedWidth(350)
+        content_layout.addWidget(left_panel)
 
-        # 分隔线（细线）
+        # 分隔线
         separator = QFrame()
         separator.setFrameShape(QFrame.Shape.VLine)
         separator.setStyleSheet("background-color: #e0e0e0;")
@@ -89,15 +113,38 @@ class MainWindow(QMainWindow):
         content_layout.addWidget(separator)
 
         # 右侧面板
-        right = self.create_right_panel()
-        content_layout.addWidget(right)
+        right_panel = self._create_right_panel()
+        content_layout.addWidget(right_panel)
 
         layout.addWidget(content)
 
         # 状态栏
         self.statusBar().showMessage("就绪")
 
-    def create_header(self) -> QWidget:
+    def _center_window(self) -> None:
+        """居中窗口."""
+        screen = QApplication.primaryScreen().geometry()
+        
+        # 使用保存的配置或默认值
+        geometry = self.config_manager.get_window_geometry()
+        
+        # 如果保存的位置超出屏幕，使用居中
+        if geometry["x"] + geometry["width"] > screen.width():
+            # 屏幕的 80% 宽度，75% 高度
+            window_width = int(screen.width() * 0.8)
+            window_height = int(screen.height() * 0.75)
+            x = (screen.width() - window_width) // 2
+            y = (screen.height() - window_height) // 2
+            self.setGeometry(x, y, window_width, window_height)
+        else:
+            self.setGeometry(
+                geometry["x"],
+                geometry["y"],
+                geometry["width"],
+                geometry["height"]
+            )
+
+    def _create_header(self) -> QWidget:
         """顶部栏."""
         header = QWidget()
         header.setFixedHeight(60)
@@ -153,50 +200,89 @@ class MainWindow(QMainWindow):
 
         return header
 
-    def create_left_panel(self) -> QWidget:
+    def _create_left_panel(self) -> QWidget:
         """左侧面板."""
+        from PyQt6.QtWidgets import QScrollArea
+
         panel = QWidget()
         panel.setStyleSheet("background-color: #ffffff;")
         
+        # 使用滚动区域
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setWidget(panel)
+        scroll.setStyleSheet("border: none;")
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+
         layout = QVBoxLayout(panel)
         layout.setSpacing(20)
         layout.setContentsMargins(20, 20, 20, 20)
 
+        # 硬件监控
+        self.hardware_monitor = HardwareMonitorPanel()
+        if hasattr(self, "hardware_info"):
+            self.hardware_monitor.set_engine_mode(self.hardware_info.recommended_mode.value)
+        layout.addWidget(self.hardware_monitor)
+
+        # 模型管理
+        self.model_manager = ModelManagerPanel()
+        self.model_manager.model_selected.connect(self._on_model_selected)
+        self.model_manager.add_predefined_models([
+            "Qwen/Qwen2.5-7B-Instruct",
+            "Qwen/Qwen2.5-3B-Instruct",
+            "Qwen/Qwen2.5-14B-Instruct",
+            "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B",
+        ])
+        layout.addWidget(self.model_manager)
+
         # 模型配置
-        model_group = self.create_group("模型配置")
+        model_group = self._create_group("模型配置")
         model_layout = QVBoxLayout(model_group)
         model_layout.setSpacing(12)
 
-        model_layout.addWidget(self.create_label("主力模型"))
-        self.model_combo = self.create_combo(["Qwen 3.5 7B", "Qwen 3.5 14B", "DeepSeek-R1 7B", "Llama 3.1 8B"])
+        model_layout.addWidget(self._create_label("主力模型"))
+        self.model_combo = self._create_combo([
+            "Qwen 3.5 7B",
+            "Qwen 3.5 14B",
+            "DeepSeek-R1 7B",
+            "Llama 3.1 8B"
+        ])
+        self.model_combo.currentTextChanged.connect(self._on_model_changed)
         model_layout.addWidget(self.model_combo)
 
-        model_layout.addWidget(self.create_label("引擎模式"))
-        self.engine_combo = self.create_combo(["自动", "外部引擎", "原生引擎", "混合模式"])
+        model_layout.addWidget(self._create_label("引擎模式"))
+        self.engine_combo = self._create_combo([
+            "自动",
+            "外部引擎",
+            "原生引擎",
+            "混合模式"
+        ])
+        self.engine_combo.currentTextChanged.connect(self._on_engine_changed)
         model_layout.addWidget(self.engine_combo)
 
-        model_layout.addWidget(self.create_label("量化等级"))
-        self.quantize_combo = self.create_combo(["INT4", "INT8", "FP16", "FP32"])
+        model_layout.addWidget(self._create_label("量化等级"))
+        self.quantize_combo = self._create_combo(["INT4", "INT8", "FP16", "FP32"])
+        self.quantize_combo.currentTextChanged.connect(self._on_quantize_changed)
         model_layout.addWidget(self.quantize_combo)
 
         layout.addWidget(model_group)
 
         # 输出配置
-        output_group = self.create_group("输出配置")
+        output_group = self._create_group("输出配置")
         output_layout = QVBoxLayout(output_group)
         output_layout.setSpacing(12)
 
-        output_layout.addWidget(self.create_label("输出格式"))
+        output_layout.addWidget(self._create_label("输出格式"))
         format_layout = QHBoxLayout()
         format_layout.setSpacing(15)
-        self.md_check = self.create_check("Markdown", True)
-        self.json_check = self.create_check("JSON", True)
-        self.graph_check = self.create_check("知识图谱", True)
+        self.md_check = self._create_check("Markdown", True)
+        self.json_check = self._create_check("JSON", True)
+        self.graph_check = self._create_check("知识图谱", True)
         for cb in [self.md_check, self.json_check, self.graph_check]:
             format_layout.addWidget(cb)
         output_layout.addLayout(format_layout)
 
-        output_layout.addWidget(self.create_label("输出目录"))
+        output_layout.addWidget(self._create_label("输出目录"))
         self.output_dir = QLineEdit("./data/output")
         self.output_dir.setStyleSheet("""
             QLineEdit {
@@ -239,7 +325,7 @@ class MainWindow(QMainWindow):
         self.start_button.clicked.connect(self.start_task)
         layout.addWidget(self.start_button)
 
-        # 进度条（简约）
+        # 进度条
         self.progress_bar = QProgressBar()
         self.progress_bar.setFixedHeight(4)
         self.progress_bar.setStyleSheet("""
@@ -256,9 +342,9 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.progress_bar)
 
         layout.addStretch()
-        return panel
+        return scroll
 
-    def create_right_panel(self) -> QWidget:
+    def _create_right_panel(self) -> QWidget:
         """右侧面板."""
         panel = QWidget()
         panel.setStyleSheet("background-color: #fafafa;")
@@ -270,7 +356,7 @@ class MainWindow(QMainWindow):
         # 查询输入
         query_widget = QWidget()
         query_widget.setStyleSheet("background-color: #ffffff; border-bottom: 1px solid #e0e0e0;")
-        query_widget.setFixedHeight(180)
+        query_widget.setFixedHeight(200)
         
         query_layout = QVBoxLayout(query_widget)
         query_layout.setContentsMargins(20, 15, 20, 15)
@@ -305,6 +391,24 @@ class MainWindow(QMainWindow):
         query_layout.addWidget(hint)
 
         layout.addWidget(query_widget)
+
+        # 阶段指示器
+        stage_widget = QWidget()
+        stage_widget.setStyleSheet("background-color: #ffffff; border-bottom: 1px solid #e0e0e0;")
+        stage_widget.setFixedHeight(80)
+        
+        stage_layout = QVBoxLayout(stage_widget)
+        stage_layout.setContentsMargins(20, 15, 20, 15)
+        stage_layout.setSpacing(10)
+
+        stage_title = QLabel("执行阶段")
+        stage_title.setStyleSheet("font-size: 14px; font-weight: bold; color: #333333;")
+        stage_layout.addWidget(stage_title)
+
+        self.stage_indicator = StageIndicator()
+        stage_layout.addWidget(self.stage_indicator)
+
+        layout.addWidget(stage_widget)
 
         # 执行日志
         log_widget = QWidget()
@@ -358,7 +462,7 @@ class MainWindow(QMainWindow):
 
         return panel
 
-    def create_group(self, title: str) -> QGroupBox:
+    def _create_group(self, title: str) -> QGroupBox:
         """创建分组."""
         group = QGroupBox(title)
         group.setStyleSheet("""
@@ -380,13 +484,13 @@ class MainWindow(QMainWindow):
         """)
         return group
 
-    def create_label(self, text: str) -> QLabel:
+    def _create_label(self, text: str) -> QLabel:
         """创建标签."""
         label = QLabel(text)
         label.setStyleSheet("color: #666666; font-size: 12px;")
         return label
 
-    def create_combo(self, items: list) -> QComboBox:
+    def _create_combo(self, items: list) -> QComboBox:
         """创建下拉框."""
         combo = QComboBox()
         combo.addItems(items)
@@ -422,7 +526,7 @@ class MainWindow(QMainWindow):
         """)
         return combo
 
-    def create_check(self, text: str, checked: bool = False) -> QCheckBox:
+    def _create_check(self, text: str, checked: bool = False) -> QCheckBox:
         """创建复选框."""
         check = QCheckBox(text)
         check.setChecked(checked)
@@ -446,6 +550,63 @@ class MainWindow(QMainWindow):
         """)
         return check
 
+    def _load_config(self) -> None:
+        """加载配置."""
+        # 恢复窗口几何
+        geometry = self.config_manager.get_window_geometry()
+        self.setGeometry(
+            geometry["x"],
+            geometry["y"],
+            geometry["width"],
+            geometry["height"]
+        )
+
+        # 恢复模型选择
+        saved_model = self.config_manager.get_model_selection()
+        self.model_combo.setCurrentText(saved_model)
+
+        # 恢复引擎模式
+        saved_engine = self.config_manager.get_engine_mode()
+        self.engine_combo.setCurrentText(saved_engine)
+
+        # 恢复量化等级
+        saved_quantize = self.config_manager.get_quantization_level()
+        self.quantize_combo.setCurrentText(saved_quantize)
+
+        # 恢复输出配置
+        output_config = self.config_manager.get_output_config()
+        formats = output_config.get("formats", ["markdown", "json"])
+        self.md_check.setChecked("markdown" in formats)
+        self.json_check.setChecked("json" in formats)
+
+        logger.info("UI 配置已恢复")
+
+    def _save_config(self) -> None:
+        """保存配置."""
+        self.config_manager.set_window_geometry(
+            self.x(),
+            self.y(),
+            self.width(),
+            self.height()
+        )
+        self.config_manager.set_model_selection(self.model_combo.currentText())
+        self.config_manager.set_engine_mode(self.engine_combo.currentText())
+        self.config_manager.set_quantization_level(self.quantize_combo.currentText())
+
+        formats = []
+        if self.md_check.isChecked():
+            formats.append("markdown")
+        if self.json_check.isChecked():
+            formats.append("json")
+
+        self.config_manager.set_output_config({
+            "formats": formats,
+            "output_dir": self.output_dir.text(),
+            "include_knowledge_graph": self.graph_check.isChecked(),
+        })
+
+        logger.info("UI 配置已保存")
+
     def eventFilter(self, obj, event):
         """事件过滤器."""
         from PyQt6.QtCore import QEvent
@@ -458,16 +619,44 @@ class MainWindow(QMainWindow):
                 return True
         return super().eventFilter(obj, event)
 
+    def _on_model_changed(self, model: str) -> None:
+        """模型选择变化."""
+        logger.info(f"模型选择：{model}")
+        self.config_manager.set_model_selection(model)
+
+    def _on_engine_changed(self, engine: str) -> None:
+        """引擎模式变化."""
+        logger.info(f"引擎模式：{engine}")
+        self.config_manager.set_engine_mode(engine)
+        
+        if hasattr(self, "hardware_monitor"):
+            self.hardware_monitor.set_engine_mode(engine)
+
+    def _on_quantize_changed(self, quantize: str) -> None:
+        """量化等级变化."""
+        logger.info(f"量化等级：{quantize}")
+        self.config_manager.set_quantization_level(quantize)
+
+    def _on_model_selected(self, model: str) -> None:
+        """模型被选中."""
+        self.model_combo.setCurrentText(model)
+        self._on_model_changed(model)
+
     def start_task(self):
         """开始任务."""
         query = self.query_input.toPlainText().strip()
         if not query:
+            QMessageBox.warning(self, "警告", "请输入查询内容")
             return
+
+        # 保存最近的查询
+        self.config_manager.add_recent_query(query)
 
         self.start_button.setEnabled(False)
         self.start_button.setText("执行中...")
         self.progress_bar.setValue(0)
         self.log_output.clear()
+        self.stage_indicator.reset()
 
         self.append_log(f"开始任务：{query[:50]}...", "info")
         self.append_log("初始化管道...", "info")
@@ -491,17 +680,20 @@ class MainWindow(QMainWindow):
         output_config = {
             "output_type": "file",
             "formats": formats,
-            "output_dir": self.output_dir.text()
+            "output_dir": self.output_dir.text(),
+            "include_knowledge_graph": self.graph_check.isChecked(),
         }
 
         self.worker = WorkerThread(self.pipeline, query, output_config)
         self.worker.log_signal.connect(self.append_log)
         self.worker.stage_signal.connect(self.update_stage)
+        self.worker.progress_signal.connect(self.progress_bar.setValue)
         self.worker.finished.connect(self.on_task_finished)
         self.worker.error.connect(self.on_task_error)
         self.worker.start()
 
         self.statusBar().showMessage("任务执行中...")
+        self._save_config()
 
     def append_log(self, message: str, log_type: str = "info"):
         """添加日志."""
@@ -527,17 +719,25 @@ class MainWindow(QMainWindow):
 
     def update_stage(self, stage: str):
         """更新阶段."""
+        stage_map = {
+            "stage1": 0,
+            "stage2": 1,
+            "stage3": 2,
+            "stage4": 3,
+        }
+        stage_index = stage_map.get(stage, 0)
+        self.stage_indicator.set_active_stage(stage_index)
+
+        progress_map = {"stage1": 20, "stage2": 40, "stage3": 60, "stage4": 80}
+        self.progress_bar.setValue(progress_map.get(stage, 0))
+
         stage_names = {
             "stage1": "阶段 1: 需求解析",
             "stage2": "阶段 2: 智能检索",
             "stage3": "阶段 3: 数据筛选",
             "stage4": "阶段 4: 输出分流",
         }
-        stage_name = stage_names.get(stage, stage)
-        self.append_log(stage_name, "info")
-
-        progress_map = {"stage1": 20, "stage2": 40, "stage3": 60, "stage4": 80}
-        self.progress_bar.setValue(progress_map.get(stage, 0))
+        self.append_log(stage_names.get(stage, stage), "info")
 
     def on_task_finished(self, result: dict):
         """任务完成."""
@@ -559,6 +759,8 @@ class MainWindow(QMainWindow):
         else:
             self.append_log(f"\n❌ 任务执行失败：{result.get('error', 'unknown')}", "error")
 
+        self._save_config()
+
     def on_task_error(self, error_msg: str):
         """任务错误."""
         self.start_button.setEnabled(True)
@@ -569,14 +771,25 @@ class MainWindow(QMainWindow):
 
     def closeEvent(self, event):
         """窗口关闭."""
+        self._save_config()
+        
         if self.worker and self.worker.isRunning():
             self.worker.terminate()
             self.worker.wait()
+        
+        if hasattr(self, "hardware_monitor"):
+            self.hardware_monitor.stop_monitoring()
+        
+        if hasattr(self, "model_manager"):
+            self.model_manager.stop_download()
+        
         event.accept()
 
 
 def run_ui():
     """运行 UI."""
+    from loguru import logger
+    
     app = QApplication(sys.argv)
     window = MainWindow()
     window.show()
