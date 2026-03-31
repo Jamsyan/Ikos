@@ -164,6 +164,74 @@ class TestModelDownloader:
             # 实际使用：download_model("damo/nlp_csanmt_translationzh2en")
             pass
 
+    def test_resolve_revision_by_source(self):
+        """应按来源修正默认 revision。"""
+        import tempfile
+
+        from ikos.utils.model_downloader import ModelDownloader
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            downloader = ModelDownloader(cache_dir=tmpdir)
+
+            assert downloader._resolve_revision("modelscope", "main") == "master"
+            assert downloader._resolve_revision("huggingface", "master") == "main"
+            assert downloader._resolve_revision("modelscope", "feature-branch") == "feature-branch"
+
+    def test_modelscope_download_uses_supported_pattern_args(self, monkeypatch):
+        """ModelScope 下载应使用 allow_patterns / ignore_patterns。"""
+        import sys
+        import tempfile
+        import types
+        from pathlib import Path
+
+        from ikos.utils.model_downloader import ModelDownloader
+
+        captured_kwargs = {}
+
+        def fake_snapshot_download(**kwargs):
+            captured_kwargs.update(kwargs)
+            target = Path(kwargs["cache_dir"]) / "Qwen" / "Qwen2.5-7B-Instruct" / kwargs["revision"]
+            target.mkdir(parents=True, exist_ok=True)
+            (target / "config.json").write_text("{}", encoding="utf-8")
+            (target / "model.safetensors").write_text("weights", encoding="utf-8")
+            return str(target)
+
+        fake_module = types.SimpleNamespace(snapshot_download=fake_snapshot_download)
+        monkeypatch.setitem(sys.modules, "modelscope", fake_module)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            downloader = ModelDownloader(cache_dir=tmpdir, preferred_source="modelscope")
+            downloader.download(
+                model_id="Qwen/Qwen2.5-7B-Instruct",
+                revision="main",
+                allow_patterns=["*.json"],
+                ignore_patterns=["*.bin"],
+            )
+
+        assert captured_kwargs["revision"] == "master"
+        assert captured_kwargs["allow_patterns"] == ["*.json"]
+        assert captured_kwargs["ignore_patterns"] == ["*.bin"]
+        assert "include" not in captured_kwargs
+        assert "exclude" not in captured_kwargs
+
+
+class TestDownloadLogRewrite:
+    """测试下载日志改写。"""
+
+    def test_download_log_rewrite(self):
+        """下载日志应改写为更适合 UI 展示的文本。"""
+        from ikos.ui.components.model_manager import ModelDownloadThread
+
+        assert ModelDownloadThread._rewrite_download_message("模型下载器已初始化") is None
+        assert (
+            ModelDownloadThread._rewrite_download_message("使用模型源：modelscope")
+            == "本次下载将使用：魔塔社区"
+        )
+        assert (
+            ModelDownloadThread._rewrite_download_message("开始下载模型：Qwen/Qwen2.5-7B-Instruct")
+            == "准备下载模型：Qwen/Qwen2.5-7B-Instruct"
+        )
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

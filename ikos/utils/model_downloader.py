@@ -111,13 +111,16 @@ class ModelDownloader:
         last_error: ModelDownloadError | None = None
         for current_source in sources:
             try:
+                resolved_revision = self._resolve_revision(current_source, revision)
+                if resolved_revision != revision:
+                    logger.info("已按 {} 规则调整版本：{} -> {}", current_source, revision, resolved_revision)
                 if current_source == "modelscope":
                     return self._download_from_modelscope(
-                        model_id, revision, allow_patterns, ignore_patterns, resume_download
+                        model_id, resolved_revision, allow_patterns, ignore_patterns, resume_download
                     )
 
                 return self._download_from_huggingface(
-                    model_id, revision, allow_patterns, ignore_patterns, resume_download
+                    model_id, resolved_revision, allow_patterns, ignore_patterns, resume_download
                 )
             except ModelDownloadError as exc:
                 last_error = exc
@@ -126,6 +129,14 @@ class ModelDownloader:
 
         assert last_error is not None
         raise last_error
+
+    def _resolve_revision(self, source: str, revision: str) -> str:
+        """按来源修正默认 revision。"""
+        if source == "modelscope" and revision == "main":
+            return "master"
+        if source == "huggingface" and revision == "master":
+            return "main"
+        return revision
     
     def _download_from_modelscope(
         self,
@@ -152,6 +163,8 @@ class ModelDownloader:
 
             source_dir = self.cache_manager.get_source_dir("modelscope")
             logger.info("使用魔塔社区下载：{}", model_id)
+            logger.info("目标版本：{}", revision)
+            logger.info("开始拉取模型文件...")
 
             # 构建下载参数
             download_kwargs = {
@@ -161,9 +174,9 @@ class ModelDownloader:
             }
             
             if allow_patterns:
-                download_kwargs["include"] = allow_patterns
+                download_kwargs["allow_patterns"] = allow_patterns
             if ignore_patterns:
-                download_kwargs["exclude"] = ignore_patterns
+                download_kwargs["ignore_patterns"] = ignore_patterns
             
             # 执行下载
             downloaded_path = snapshot_download(**download_kwargs)
@@ -243,6 +256,8 @@ class ModelDownloader:
 
             source_dir = self.cache_manager.get_source_dir("huggingface")
             logger.info("使用 Hugging Face 下载：{}", model_id)
+            logger.info("目标版本：{}", revision)
+            logger.info("开始拉取模型文件...")
 
             # 构建下载参数
             download_kwargs = {

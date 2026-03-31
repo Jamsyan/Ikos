@@ -1,7 +1,8 @@
 """阶段指示器 - 可视化展示四阶段执行状态，支持阶段状态显示."""
 
 from PyQt6.QtCore import Qt
-from PyQt6.QtWidgets import QGridLayout, QHBoxLayout, QLabel, QSizePolicy, QVBoxLayout, QWidget
+from PyQt6.QtWidgets import (QGridLayout, QHBoxLayout, QLabel, QProgressBar,
+                             QSizePolicy, QVBoxLayout, QWidget)
 
 
 class StageIndicator(QWidget):
@@ -31,6 +32,8 @@ class StageIndicator(QWidget):
         self._num_labels = []
         self._name_labels = []
         self._desc_labels = []
+        self._progress_bars = []
+        self._progress_labels = []
 
         for i, (num, name, desc) in enumerate(stages):
             stage_widget = self._create_stage_widget(num, name, desc, i)
@@ -85,11 +88,25 @@ class StageIndicator(QWidget):
         desc_label.setWordWrap(True)
         layout.addWidget(desc_label)
 
+        progress_bar = QProgressBar()
+        progress_bar.setRange(0, 100)
+        progress_bar.setValue(0)
+        progress_bar.setTextVisible(False)
+        progress_bar.setFixedHeight(4)
+        progress_bar.setStyleSheet(self._get_progress_style("pending"))
+        layout.addWidget(progress_bar)
+
+        progress_label = QLabel("等待执行")
+        progress_label.setStyleSheet(self._get_progress_label_style("pending"))
+        layout.addWidget(progress_label)
+
         # 存储引用
         self._stage_widgets.append(widget)
         self._num_labels.append(num_label)
         self._name_labels.append(name_label)
         self._desc_labels.append(desc_label)
+        self._progress_bars.append(progress_bar)
+        self._progress_labels.append(progress_label)
 
         return widget
 
@@ -256,6 +273,36 @@ class StageIndicator(QWidget):
         }
         return styles.get(status, "")
 
+    def _get_progress_style(self, status: str) -> str:
+        """获取进度条样式。"""
+        chunk_color = {
+            "pending": "#d9d9d9",
+            "active": "#1890ff",
+            "completed": "#52c41a",
+            "failed": "#ff4d4f",
+        }.get(status, "#d9d9d9")
+        return f"""
+            QProgressBar {{
+                background-color: #f5f5f5;
+                border: none;
+                border-radius: 2px;
+            }}
+            QProgressBar::chunk {{
+                background-color: {chunk_color};
+                border-radius: 2px;
+            }}
+        """
+
+    def _get_progress_label_style(self, status: str) -> str:
+        """获取进度文案样式。"""
+        color = {
+            "pending": "#bfbfbf",
+            "active": "#1890ff",
+            "completed": "#52c41a",
+            "failed": "#ff4d4f",
+        }.get(status, "#bfbfbf")
+        return f"color: {color}; font-size: 10px;"
+
     def set_active_stage(self, stage_index: int) -> None:
         """设置激活阶段.
 
@@ -290,6 +337,20 @@ class StageIndicator(QWidget):
             # 更新背景
             widget.setStyleSheet(self._get_widget_style(status))
 
+            # 更新阶段进度
+            if status == "completed":
+                self._progress_bars[i].setValue(100)
+                self._progress_labels[i].setText("阶段完成")
+            elif status == "active":
+                self._progress_bars[i].setValue(max(self._progress_bars[i].value(), 18))
+                self._progress_labels[i].setText("处理中")
+            else:
+                self._progress_bars[i].setValue(0)
+                self._progress_labels[i].setText("等待执行")
+
+            self._progress_bars[i].setStyleSheet(self._get_progress_style(status))
+            self._progress_labels[i].setStyleSheet(self._get_progress_label_style(status))
+
     def set_stage_completed(self, stage_index: int) -> None:
         """设置阶段为完成状态.
 
@@ -306,6 +367,10 @@ class StageIndicator(QWidget):
         self._name_labels[stage_index].setStyleSheet(self._get_name_style("completed"))
         self._desc_labels[stage_index].setStyleSheet(self._get_desc_style("completed"))
         self._stage_widgets[stage_index].setStyleSheet(self._get_widget_style("completed"))
+        self._progress_bars[stage_index].setValue(100)
+        self._progress_bars[stage_index].setStyleSheet(self._get_progress_style("completed"))
+        self._progress_labels[stage_index].setText("阶段完成")
+        self._progress_labels[stage_index].setStyleSheet(self._get_progress_label_style("completed"))
 
     def set_stage_failed(self, stage_index: int) -> None:
         """设置阶段为失败状态.
@@ -321,6 +386,10 @@ class StageIndicator(QWidget):
         self._name_labels[stage_index].setStyleSheet(self._get_name_style("failed"))
         self._desc_labels[stage_index].setStyleSheet(self._get_desc_style("failed"))
         self._stage_widgets[stage_index].setStyleSheet(self._get_widget_style("failed"))
+        self._progress_bars[stage_index].setValue(max(self._progress_bars[stage_index].value(), 15))
+        self._progress_bars[stage_index].setStyleSheet(self._get_progress_style("failed"))
+        self._progress_labels[stage_index].setText("阶段失败")
+        self._progress_labels[stage_index].setStyleSheet(self._get_progress_label_style("failed"))
 
     def reset(self) -> None:
         """重置所有阶段."""
@@ -336,6 +405,10 @@ class StageIndicator(QWidget):
             self._name_labels[i].setStyleSheet(self._get_name_style("pending"))
             self._desc_labels[i].setStyleSheet(self._get_desc_style("pending"))
             widget.setStyleSheet(self._get_widget_style("pending"))
+            self._progress_bars[i].setValue(0)
+            self._progress_bars[i].setStyleSheet(self._get_progress_style("pending"))
+            self._progress_labels[i].setText("等待执行")
+            self._progress_labels[i].setStyleSheet(self._get_progress_label_style("pending"))
 
     def next_stage(self) -> None:
         """进入下一阶段."""
@@ -366,3 +439,22 @@ class StageIndicator(QWidget):
             set: 已完成的阶段索引集合
         """
         return self._completed_stages.copy()
+
+    def set_stage_progress(self, stage_index: int, progress: int, detail: str | None = None) -> None:
+        """设置阶段内进度。"""
+        if not hasattr(self, "_stage_widgets"):
+            return
+        if stage_index < 0 or stage_index >= len(self._stage_widgets):
+            return
+
+        bounded_progress = max(0, min(100, progress))
+        self._progress_bars[stage_index].setValue(bounded_progress)
+
+        if detail:
+            self._progress_labels[stage_index].setText(detail)
+        elif bounded_progress >= 100:
+            self._progress_labels[stage_index].setText("阶段完成")
+        elif bounded_progress > 0:
+            self._progress_labels[stage_index].setText(f"进度 {bounded_progress}%")
+        else:
+            self._progress_labels[stage_index].setText("等待执行")

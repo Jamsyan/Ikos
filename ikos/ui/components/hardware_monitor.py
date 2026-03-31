@@ -153,7 +153,12 @@ class HardwareMonitorPanel(QGroupBox):
         try:
             from ikos.core import detect_hardware
 
-            self._hardware_info = detect_hardware()
+            # 定时刷新只更新 UI，避免把同一批硬件状态反复写进日志。
+            logger.disable("ikos.core.hardware_detector")
+            try:
+                self._hardware_info = detect_hardware()
+            finally:
+                logger.enable("ikos.core.hardware_detector")
 
             # 更新 GPU 信息
             if self._hardware_info.gpu_model:

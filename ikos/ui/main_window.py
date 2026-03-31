@@ -4,7 +4,7 @@ import sys
 from html import escape
 
 from loguru import logger
-from PyQt6.QtCore import Qt, QThread, pyqtSignal
+from PyQt6.QtCore import QSignalBlocker, Qt, QThread, pyqtSignal
 from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import (QApplication, QCheckBox, QComboBox, QFileDialog,
                              QFrame, QGroupBox, QHBoxLayout, QLabel, QLineEdit,
@@ -174,8 +174,10 @@ class MainWindow(QMainWindow):
         layout.addWidget(content, 1)
 
         # 状态栏
-        self.statusBar().showMessage("就绪")
-        self._set_status("就绪", "#52c41a")
+        self._status_priority = -1
+        self._status_token = None
+        self.statusBar().showMessage("待检查")
+        self._set_status("待检查", "#8c8c8c", "正在确认当前工作状态", priority=0)
 
     def _center_window(self) -> None:
         """居中窗口."""
@@ -251,7 +253,7 @@ class MainWindow(QMainWindow):
 
         # 状态
         status_layout = QHBoxLayout()
-        status_layout.setSpacing(8)
+        status_layout.setSpacing(10)
 
         self.status_dot = QFrame()
         self.status_dot.setFixedSize(8, 8)
@@ -263,17 +265,27 @@ class MainWindow(QMainWindow):
         """)
         status_layout.addWidget(self.status_dot)
 
-        self.status_label = QLabel("就绪")
-        self.status_label.setStyleSheet("color: #666666; font-size: 13px;")
-        status_layout.addWidget(self.status_label)
+        status_text_layout = QVBoxLayout()
+        status_text_layout.setSpacing(1)
+
+        self.status_label = QLabel("待检查")
+        self.status_label.setStyleSheet("color: #333333; font-size: 13px; font-weight: bold;")
+        status_text_layout.addWidget(self.status_label)
+
+        self.status_detail_label = QLabel("正在确认当前工作状态")
+        self.status_detail_label.setStyleSheet("color: #8c8c8c; font-size: 10px;")
+        status_text_layout.addWidget(self.status_detail_label)
+
+        status_layout.addLayout(status_text_layout)
 
         status_frame = QWidget()
         status_frame.setLayout(status_layout)
         status_frame.setStyleSheet("""
             QWidget {
-                background-color: #f5f5f5;
-                border-radius: 4px;
-                padding: 6px 12px;
+                background-color: #f7f7f7;
+                border: 1px solid #ececec;
+                border-radius: 10px;
+                padding: 7px 14px;
             }
         """)
         layout.addWidget(status_frame)
@@ -356,6 +368,16 @@ class MainWindow(QMainWindow):
         quantize_layout.addWidget(self.quantize_combo)
         config_layout.addLayout(quantize_layout)
 
+        source_layout = QVBoxLayout()
+        source_label = QLabel("下载源")
+        source_label.setStyleSheet("color: #666666; font-size: 11px;")
+        source_layout.addWidget(source_label)
+
+        self.download_source_combo = self._create_download_source_combo()
+        self.download_source_combo.setMinimumWidth(130)
+        source_layout.addWidget(self.download_source_combo)
+        config_layout.addLayout(source_layout)
+
         config_layout.addSpacing(20)
 
         # 输出格式
@@ -435,7 +457,30 @@ class MainWindow(QMainWindow):
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setWidget(panel)
-        scroll.setStyleSheet("border: none;")
+        scroll.setStyleSheet("""
+            QScrollArea {
+                border: none;
+                background-color: #ffffff;
+            }
+            QScrollBar:vertical {
+                width: 8px;
+                margin: 6px 2px 6px 0;
+                background: transparent;
+            }
+            QScrollBar::handle:vertical {
+                min-height: 36px;
+                border-radius: 4px;
+                background: rgba(0, 0, 0, 0.12);
+            }
+            QScrollBar::handle:vertical:hover {
+                background: rgba(0, 0, 0, 0.22);
+            }
+            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical,
+            QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
+                height: 0;
+                background: transparent;
+            }
+        """)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
 
         layout = QVBoxLayout(panel)
@@ -501,6 +546,10 @@ class MainWindow(QMainWindow):
         # 模型管理（紧凑版）
         self.model_manager = ModelManagerPanel()
         self.model_manager.model_selected.connect(self._on_model_selected)
+        self.model_manager.model_downloaded.connect(self._on_model_downloaded)
+        self.model_manager.download_log.connect(self._append_download_log)
+        self.model_manager.download_status_changed.connect(self._on_download_status_changed)
+        self.model_manager.download_source_changed.connect(self._on_download_source_changed)
         self.model_manager.add_predefined_models([
             "Qwen/Qwen2.5-7B-Instruct",
             "Qwen/Qwen2.5-3B-Instruct",
@@ -726,8 +775,8 @@ class MainWindow(QMainWindow):
         combo.setStyleSheet("""
             QComboBox {
                 border: 1px solid #d9d9d9;
-                border-radius: 4px;
-                padding: 0 10px;
+                border-radius: 8px;
+                padding: 0 12px;
                 color: #333333;
                 font-size: 12px;
                 background-color: white;
@@ -735,21 +784,31 @@ class MainWindow(QMainWindow):
             QComboBox:hover {
                 border-color: #1890ff;
             }
+            QComboBox:focus {
+                border-color: #1890ff;
+            }
             QComboBox::drop-down {
+                width: 24px;
                 border: none;
-                width: 30px;
+                background: transparent;
             }
             QComboBox::down-arrow {
                 image: none;
+                width: 0px;
+                height: 0px;
                 border-left: 5px solid transparent;
                 border-right: 5px solid transparent;
-                border-top: 6px solid #999999;
+                border-top: 6px solid #8c8c8c;
                 margin-right: 10px;
             }
             QComboBox QAbstractItemView {
                 border: 1px solid #d9d9d9;
+                border-radius: 8px;
+                padding: 4px;
                 background-color: white;
                 color: #333333;
+                selection-background-color: #e6f4ff;
+                selection-color: #1890ff;
             }
         """)
         return combo
@@ -778,6 +837,15 @@ class MainWindow(QMainWindow):
         """)
         return check
 
+    def _create_download_source_combo(self) -> QComboBox:
+        """创建下载源下拉框。"""
+        combo = self._create_combo([])
+        combo.addItem("自动", "auto")
+        combo.addItem("魔塔社区", "modelscope")
+        combo.addItem("Hugging Face", "huggingface")
+        combo.currentIndexChanged.connect(self._on_topbar_download_source_changed)
+        return combo
+
     def _browse_output_dir(self) -> None:
         """浏览输出目录."""
         dir_path = QFileDialog.getExistingDirectory(
@@ -801,6 +869,8 @@ class MainWindow(QMainWindow):
         saved_quantize = self.config_manager.get_quantization_level()
         self.quantize_combo.setCurrentText(saved_quantize)
 
+        self._sync_download_source_widgets(self.config_manager.get_download_source())
+
         output_config = self.config_manager.get_output_config()
         formats = output_config.get("formats", ["markdown", "json"])
         self.md_check.setChecked("markdown" in formats)
@@ -808,6 +878,7 @@ class MainWindow(QMainWindow):
         if "knowledge_graph" in output_config:
             self.graph_check.setChecked(output_config["knowledge_graph"])
 
+        self._refresh_idle_status()
         logger.info("UI 配置已恢复")
 
     def _save_config(self) -> None:
@@ -821,6 +892,7 @@ class MainWindow(QMainWindow):
         self.config_manager.set_model_selection(self.model_combo.currentText())
         self.config_manager.set_engine_mode(self.engine_combo.currentText())
         self.config_manager.set_quantization_level(self.quantize_combo.currentText())
+        self.config_manager.set_download_source(self.get_download_source())
 
         formats = []
         if self.md_check.isChecked():
@@ -852,6 +924,9 @@ class MainWindow(QMainWindow):
         """模型选择变化."""
         logger.info(f"模型选择：{model}")
         self.config_manager.set_model_selection(model)
+        if not (self.worker and self.worker.isRunning()):
+            self._status_priority = -1
+        self._refresh_idle_status()
 
     def _update_task_char_count(self) -> None:
         """更新任务字符计数."""
@@ -887,6 +962,91 @@ class MainWindow(QMainWindow):
             self.model_combo.setCurrentText(model)
         self._on_model_changed(model)
 
+    def _on_model_downloaded(self, model_path: str) -> None:
+        """模型下载完成后刷新状态。"""
+        self._status_priority = -1
+        self._refresh_idle_status()
+
+    def _on_topbar_download_source_changed(self) -> None:
+        """顶部下载源变化."""
+        self._on_download_source_changed(self.get_download_source())
+
+    def _on_download_source_changed(self, source: str) -> None:
+        """统一处理下载源变化。"""
+        source = source or "auto"
+        self.config_manager.set_download_source(source)
+        self._sync_download_source_widgets(source)
+
+        source_labels = {
+            "auto": "自动",
+            "modelscope": "魔塔社区",
+            "huggingface": "Hugging Face",
+        }
+        self.append_log(f"模型下载源已切换为：{source_labels.get(source, source)}", "info")
+
+    def _sync_download_source_widgets(self, source: str) -> None:
+        """同步顶部与模型管理面板的下载源控件。"""
+        top_index = self.download_source_combo.findData(source)
+        if top_index >= 0 and self.download_source_combo.currentIndex() != top_index:
+            blocker = QSignalBlocker(self.download_source_combo)
+            self.download_source_combo.setCurrentIndex(top_index)
+            del blocker
+
+        if hasattr(self, "model_manager"):
+            self.model_manager.set_download_source(source)
+
+    def get_download_source(self) -> str:
+        """获取当前下载源配置。"""
+        source = self.download_source_combo.currentData()
+        return source if isinstance(source, str) else "auto"
+
+    def _append_download_log(self, message: str, log_type: str = "info") -> None:
+        """将下载日志接入主日志区。"""
+        self.append_log(f"模型下载：{message}", log_type)
+
+    def _on_download_status_changed(self, status: str) -> None:
+        """更新下载状态提示。"""
+        if self.worker and self.worker.isRunning():
+            return
+
+        if "失败" in status:
+            self._set_status("模型下载失败", "#ff4d4f", status, priority=96, token="download")
+            return
+
+        if any(keyword in status for keyword in ("准备", "下载", "校验", "检测", "拉取", "清理")):
+            self._set_status("模型下载中", "#1890ff", status, priority=95, token="download")
+            return
+
+        self._status_priority = -1
+        self._refresh_idle_status()
+
+    def _refresh_idle_status(self) -> None:
+        """根据当前上下文刷新空闲状态。"""
+        if self.worker and self.worker.isRunning():
+            return
+        if hasattr(self, "model_manager") and hasattr(self.model_manager, "download_thread"):
+            if self.model_manager.download_thread.isRunning():
+                return
+
+        selected_model = self._get_runtime_model_name()
+        if selected_model and hasattr(self, "model_manager") and self.model_manager.has_cached_model(selected_model):
+            self._set_status("就绪", "#52c41a", f"当前模型已就绪：{selected_model}", priority=10, token="idle")
+            return
+
+        if selected_model:
+            self._set_status("待下载模型", "#faad14", f"当前模型尚未缓存：{selected_model}", priority=10, token="idle")
+            return
+
+        self._set_status("待选择模型", "#8c8c8c", "请先选择并下载可用模型", priority=10, token="idle")
+
+    def _get_runtime_model_name(self) -> str:
+        """获取当前实际参与下载的模型名。"""
+        if hasattr(self, "model_manager") and self.model_manager.model_combo.currentText():
+            return self.model_manager.model_combo.currentText()
+        if hasattr(self, "model_combo"):
+            return self.model_combo.currentText()
+        return ""
+
     def start_task(self):
         """开始任务."""
         task = self.task_input.toPlainText().strip()
@@ -901,7 +1061,7 @@ class MainWindow(QMainWindow):
         self.progress_bar.setValue(0)
         self.log_output.clear()
         self.stage_indicator.reset()
-        self._set_status("构建进行中", "#1890ff")
+        self._set_status("构建进行中", "#1890ff", "正在准备构建流程", priority=80, token="build")
         
         self._log_entries = []
 
@@ -918,7 +1078,7 @@ class MainWindow(QMainWindow):
             self.append_log(f"执行管道初始化失败：{e}", "error")
             self.start_button.setEnabled(True)
             self.start_button.setText("开始知识构建")
-            self._set_status("初始化失败", "#ff4d4f")
+            self._set_status("构建初始化失败", "#ff4d4f", str(e), priority=90, token="build")
             return
 
         formats = []
@@ -1065,7 +1225,15 @@ class MainWindow(QMainWindow):
             "stage3": "数据筛选中",
             "stage4": "输出整理中",
         }
-        self._set_status(stage_status.get(stage, "构建进行中"), "#1890ff")
+        stage_progress = {
+            "stage1": (20, "正在拆解需求"),
+            "stage2": (45, "正在检索与收集内容"),
+            "stage3": (70, "正在筛选并整理结果"),
+            "stage4": (88, "正在生成输出文件"),
+        }
+        progress_value, detail = stage_progress.get(stage, (10, "正在处理"))
+        self.stage_indicator.set_stage_progress(stage_index, progress_value, detail)
+        self._set_status(stage_status.get(stage, "构建进行中"), "#1890ff", detail, priority=80, token="build")
 
     def on_task_finished(self, result: dict):
         """任务完成."""
@@ -1086,25 +1254,44 @@ class MainWindow(QMainWindow):
             
             # 更新状态栏显示输出文件数量
             file_count = len(result.get("output_files", []))
-            self._set_status(f"构建完成，已生成 {file_count} 个文件", "#52c41a")
+            self._set_status("构建完成", "#52c41a", f"已生成 {file_count} 个文件", priority=70, token="build")
         else:
             self.append_log(f"知识构建失败：{result.get('error', 'unknown')}", "error")
-            self._set_status("构建失败", "#ff4d4f")
+            self.stage_indicator.set_stage_failed(self.stage_indicator.get_current_stage())
+            self._set_status("构建失败", "#ff4d4f", result.get("error", "未知错误"), priority=90, token="build")
 
         self._save_config()
+        self._refresh_idle_status()
 
     def on_task_error(self, error_msg: str):
         """任务错误."""
         self.start_button.setEnabled(True)
         self.start_button.setText("开始知识构建")
         self.progress_bar.setValue(0)
-        self._set_status("构建失败", "#ff4d4f")
+        current_stage = self.stage_indicator.get_current_stage()
+        if current_stage >= 0:
+            self.stage_indicator.set_stage_failed(current_stage)
+        self._set_status("构建失败", "#ff4d4f", error_msg, priority=90, token="build")
         self.append_log(f"执行错误：{error_msg}", "error")
 
-    def _set_status(self, text: str, color: str) -> None:
+    def _set_status(
+        self,
+        text: str,
+        color: str,
+        detail: str | None = None,
+        priority: int = 0,
+        token: str | None = None,
+    ) -> None:
         """统一更新顶部状态与状态栏。"""
+        if priority < getattr(self, "_status_priority", -1):
+            return
+
+        self._status_priority = priority
+        self._status_token = token
         self.status_label.setText(text)
-        self.statusBar().showMessage(text)
+        detail_text = detail or "等待新的操作"
+        self.status_detail_label.setText(detail_text)
+        self.statusBar().showMessage(f"{text} - {detail_text}")
         self.status_dot.setStyleSheet(f"""
             QFrame {{
                 background-color: {color};
