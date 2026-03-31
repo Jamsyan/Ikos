@@ -10,8 +10,8 @@
 """
 
 from .initial_filter import InitialFilter
-from .merger import DataMerger
 from .knowledge_graph import KnowledgeGraphBuilder
+from .merger import DataMerger
 from .refiner import DataRefiner
 
 __all__ = [

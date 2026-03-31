@@ -3,13 +3,14 @@
 import json
 from pathlib import Path
 from typing import Any
+
 from loguru import logger
 
 from ikos.core import OllamaProvider, PlaywrightSearchProvider
 from ikos.stage1_requirement import RequirementParser, SideSupervisor
-from ikos.stage2_search import TaskSplitter, SearchExecutor, MemoManager
-from ikos.stage3_filter import InitialFilter, DataMerger, DataRefiner
-from ikos.stage4_output import OutputDispatcher, FileOutputter
+from ikos.stage2_search import MemoManager, SearchExecutor, TaskSplitter
+from ikos.stage3_filter import DataMerger, DataRefiner, InitialFilter
+from ikos.stage4_output import FileOutputter, OutputDispatcher
 from ikos.utils.logger import setup_logger
 
 

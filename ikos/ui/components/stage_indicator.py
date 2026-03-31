@@ -1,11 +1,7 @@
 """阶段指示器 - 可视化展示四阶段执行状态."""
 
-from PyQt6.QtWidgets import (
-    QWidget,
-    QHBoxLayout,
-    QLabel,
-)
 from PyQt6.QtCore import Qt
+from PyQt6.QtWidgets import QHBoxLayout, QLabel, QWidget
 
 
 class StageIndicator(QWidget):
@@ -62,7 +58,7 @@ class StageIndicator(QWidget):
         num_label = QLabel(num)
         num_label.setFixedSize(24, 24)
         num_label.setStyleSheet(self._get_num_style(active))
-        num_label.setAlignment(Qt.AlignCenter)
+        num_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(num_label)
 
         # 名称标签

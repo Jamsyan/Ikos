@@ -3,10 +3,11 @@
 import os
 from pathlib import Path
 from typing import Any
+
 from loguru import logger
 
-from .model_source import ModelSourceSelector, ModelSourceType
 from .cache_manager import ModelCacheManager
+from .model_source import ModelSourceSelector, ModelSourceType
 
 
 class ModelDownloader:

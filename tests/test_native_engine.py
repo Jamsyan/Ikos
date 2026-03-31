@@ -2,18 +2,12 @@
 
 import pytest
 
-from ikos.core.native_inference_engine import (
-    NativeInferenceEngine,
-    NativeEngineBuilder,
-    create_native_engine,
-)
-from ikos.core.engine_switcher import (
-    EngineSwitcher,
-    EngineType,
-    create_engine_selector,
-    get_engine,
-)
+from ikos.core.engine_switcher import (EngineSwitcher, EngineType,
+                                       create_engine_selector, get_engine)
 from ikos.core.hardware_detector import detect_hardware
+from ikos.core.native_inference_engine import (NativeEngineBuilder,
+                                               NativeInferenceEngine,
+                                               create_native_engine)
 
 
 class TestNativeEngineBuilder:

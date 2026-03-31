@@ -1,8 +1,9 @@
 """缓存管理命令行工具."""
 
-import sys
 import argparse
+import sys
 from pathlib import Path
+
 from loguru import logger
 
 from .cache_manager import ModelCacheManager

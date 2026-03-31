@@ -8,9 +8,9 @@
 - 抄成熟方案
 """
 
+from .db_output import DatabaseOutputter
 from .dispatcher import OutputDispatcher
 from .file_output import FileOutputter
-from .db_output import DatabaseOutputter
 
 __all__ = [
     "OutputDispatcher",

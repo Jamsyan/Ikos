@@ -72,8 +72,9 @@ def test_ui_launch():
     
     try:
         from PyQt6.QtWidgets import QApplication
+
         from ikos.ui.main_window_qml import MainWindowQML
-        
+
         # 创建应用（不运行事件循环）
         app = QApplication.instance() or QApplication(sys.argv)
         print("[OK] QApplication 创建成功")

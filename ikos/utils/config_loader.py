@@ -1,8 +1,9 @@
 """配置文件加载工具."""
 
-import yaml
 from pathlib import Path
 from typing import Any
+
+import yaml
 
 
 def load_yaml(path: str | Path) -> dict[str, Any]:

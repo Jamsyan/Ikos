@@ -1,10 +1,12 @@
 """UI 组件测试."""
 
-import pytest
 import sys
+
+import pytest
 from PyQt6.QtWidgets import QApplication
 
-from ikos.ui.components import HardwareMonitorPanel, ModelManagerPanel, StageIndicator
+from ikos.ui.components import (HardwareMonitorPanel, ModelManagerPanel,
+                                StageIndicator)
 
 
 @pytest.fixture(scope="module")

@@ -1,12 +1,13 @@
 """数据合并器 - 第三阶段核心组件."""
 
 import json
+from pathlib import Path
 from typing import Any
+
 from loguru import logger
 
 from ikos.core import ModelProvider
 from ikos.utils.config_loader import load_yaml
-from pathlib import Path
 
 
 class DataMerger:

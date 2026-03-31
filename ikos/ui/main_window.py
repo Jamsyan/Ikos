@@ -1,36 +1,21 @@
 """主窗口 - 完整重构版."""
 
 import sys
-from loguru import logger
-from PyQt6.QtWidgets import (
-    QApplication,
-    QMainWindow,
-    QWidget,
-    QVBoxLayout,
-    QHBoxLayout,
-    QTextEdit,
-    QLineEdit,
-    QPushButton,
-    QLabel,
-    QFrame,
-    QComboBox,
-    QCheckBox,
-    QGroupBox,
-    QProgressBar,
-    QMessageBox,
-)
-from PyQt6.QtCore import Qt, QThread, pyqtSignal, QTimer
-from PyQt6.QtGui import QFont
 
+from loguru import logger
+from PyQt6.QtCore import Qt, QThread, QTimer, pyqtSignal
+from PyQt6.QtGui import QFont
+from PyQt6.QtWidgets import (QApplication, QCheckBox, QComboBox, QFrame,
+                             QGroupBox, QHBoxLayout, QLabel, QLineEdit,
+                             QMainWindow, QMessageBox, QProgressBar,
+                             QPushButton, QTextEdit, QVBoxLayout, QWidget)
+
+from ikos.core import (EngineType, NativeModelLoader, create_native_engine,
+                       detect_hardware)
 from ikos.core.pipeline import IkosPipeline
-from ikos.core import (
-    detect_hardware,
-    create_native_engine,
-    EngineType,
-    NativeModelLoader,
-)
+from ikos.ui.components import (HardwareMonitorPanel, ModelManagerPanel,
+                                StageIndicator)
 from ikos.ui.config_manager import UIConfigManager
-from ikos.ui.components import HardwareMonitorPanel, ModelManagerPanel, StageIndicator
 
 
 class WorkerThread(QThread):
@@ -639,7 +624,8 @@ class MainWindow(QMainWindow):
 
     def _on_model_selected(self, model: str) -> None:
         """模型被选中."""
-        self.model_combo.setCurrentText(model)
+        if hasattr(self, "model_combo"):
+            self.model_combo.setCurrentText(model)
         self._on_model_changed(model)
 
     def start_task(self):

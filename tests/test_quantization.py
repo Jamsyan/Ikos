@@ -2,15 +2,13 @@
 
 import pytest
 
-from ikos.core.quantization_config import (
-    QuantizationConfig,
-    QuantizationLevel,
-    QuantizationRecommendation,
-    QuantizationLoader,
-    auto_recommend_quantization,
-    get_quantization_config,
-)
 from ikos.core.hardware_detector import HardwareInfo, HardwareTier
+from ikos.core.quantization_config import (QuantizationConfig,
+                                           QuantizationLevel,
+                                           QuantizationLoader,
+                                           QuantizationRecommendation,
+                                           auto_recommend_quantization,
+                                           get_quantization_config)
 
 
 class TestQuantizationLevel:

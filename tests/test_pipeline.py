@@ -1,8 +1,9 @@
 """Ikos 管道测试."""
 
-import pytest
-from pathlib import Path
 import sys
+from pathlib import Path
+
+import pytest
 
 # 添加项目根目录到路径
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -14,7 +15,7 @@ class TestPipeline:
     def test_pipeline_initialization(self):
         """测试管道初始化。"""
         from ikos.core.pipeline import IkosPipeline
-        
+
         # 创建管道（需要 Ollama 服务运行）
         # 如果 Ollama 未运行，这个测试会失败
         try:
@@ -28,9 +29,9 @@ class TestPipeline:
     
     def test_stage1_parser_initialization(self):
         """测试第一阶段解析器初始化。"""
-        from ikos.stage1_requirement.parser import RequirementParser
         from ikos.core import OllamaProvider
-        
+        from ikos.stage1_requirement.parser import RequirementParser
+
         # 使用 mock provider
         class MockProvider:
             def call(self, prompt, model, **kwargs):
@@ -134,8 +135,9 @@ class TestPipeline:
     
     def test_stage4_file_outputter(self):
         """测试文件输出器。"""
-        from ikos.stage4_output.file_output import FileOutputter
         import tempfile
+
+        from ikos.stage4_output.file_output import FileOutputter
         
         outputter = FileOutputter()
         
@@ -154,7 +156,7 @@ class TestPipeline:
     def test_utils_config_loader(self):
         """测试配置加载器。"""
         from ikos.utils.config_loader import load_yaml
-        
+
         # 测试加载存在的配置
         config_path = Path(__file__).parent.parent / "config" / "settings.yaml"
         
@@ -167,8 +169,9 @@ class TestPipeline:
     
     def test_utils_logger(self):
         """测试日志配置。"""
-        from ikos.utils.logger import setup_logger
         import tempfile
+
+        from ikos.utils.logger import setup_logger
         
         with tempfile.TemporaryDirectory() as tmpdir:
             log_file = Path(tmpdir) / "test.log"

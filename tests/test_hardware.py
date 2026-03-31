@@ -2,14 +2,10 @@
 
 import pytest
 
-from ikos.core.hardware_detector import (
-    HardwareDetector,
-    HardwareInfo,
-    HardwareTier,
-    EngineMode,
-    detect_hardware,
-    check_minimum_requirements,
-)
+from ikos.core.hardware_detector import (EngineMode, HardwareDetector,
+                                         HardwareInfo, HardwareTier,
+                                         check_minimum_requirements,
+                                         detect_hardware)
 
 
 class TestHardwareInfo:

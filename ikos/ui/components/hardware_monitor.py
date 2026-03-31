@@ -1,15 +1,9 @@
 """硬件监控面板 - 实时显示 GPU/CPU/内存状态."""
 
-from PyQt6.QtWidgets import (
-    QWidget,
-    QVBoxLayout,
-    QHBoxLayout,
-    QLabel,
-    QProgressBar,
-    QGroupBox,
-)
-from PyQt6.QtCore import QTimer
 from loguru import logger
+from PyQt6.QtCore import QTimer
+from PyQt6.QtWidgets import (QGroupBox, QHBoxLayout, QLabel, QProgressBar,
+                             QVBoxLayout, QWidget)
 
 
 class HardwareMonitorPanel(QGroupBox):

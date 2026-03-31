@@ -1,8 +1,9 @@
 """UI 配置管理器测试."""
 
-import pytest
 import json
 from pathlib import Path
+
+import pytest
 
 from ikos.ui.config_manager import UIConfigManager
 

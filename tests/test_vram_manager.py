@@ -2,14 +2,9 @@
 
 import pytest
 
-from ikos.core.vram_manager import (
-    VRAMManager,
-    VRAMPool,
-    MemoryMonitor,
-    VRAMConfig,
-    Priority,
-)
 from ikos.core.hardware_detector import HardwareInfo
+from ikos.core.vram_manager import (MemoryMonitor, Priority, VRAMConfig,
+                                    VRAMManager, VRAMPool)
 
 
 class TestPriority:

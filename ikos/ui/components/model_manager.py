@@ -1,20 +1,10 @@
 """模型管理面板 - 模型下载、切换与管理."""
 
-from PyQt6.QtWidgets import (
-    QWidget,
-    QVBoxLayout,
-    QHBoxLayout,
-    QLabel,
-    QPushButton,
-    QProgressBar,
-    QListWidget,
-    QListWidgetItem,
-    QComboBox,
-    QGroupBox,
-    QMessageBox,
-)
-from PyQt6.QtCore import pyqtSignal, QThread
 from loguru import logger
+from PyQt6.QtCore import QThread, pyqtSignal
+from PyQt6.QtWidgets import (QComboBox, QGroupBox, QHBoxLayout, QLabel,
+                             QListWidget, QListWidgetItem, QMessageBox,
+                             QProgressBar, QPushButton, QVBoxLayout, QWidget)
 
 
 class ModelDownloadThread(QThread):

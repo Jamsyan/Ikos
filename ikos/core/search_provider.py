@@ -7,9 +7,9 @@
 - 搜索结果结构化
 """
 
+from .playwright_search import PlaywrightSearchProvider
 from .search_provider_base import SearchProvider
 from .types import SearchResult, WebContent
-from .playwright_search import PlaywrightSearchProvider
 
 __all__ = [
     "SearchProvider",

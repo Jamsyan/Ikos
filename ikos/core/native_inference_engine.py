@@ -8,7 +8,8 @@ from loguru import logger
 from .hardware_detector import HardwareInfo, detect_hardware
 from .model_provider import ModelProvider, ModelResponse, VoteResult
 from .native_model_loader import NativeModelLoader
-from .quantization_config import QuantizationConfig, auto_recommend_quantization
+from .quantization_config import (QuantizationConfig,
+                                  auto_recommend_quantization)
 from .vram_manager import Priority, VRAMManager
 
 

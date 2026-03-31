@@ -10,8 +10,8 @@
 """
 
 from .parser import RequirementParser
-from .validator import NetworkValidator
 from .supervisor import SideSupervisor
+from .validator import NetworkValidator
 
 __all__ = [
     "RequirementParser",

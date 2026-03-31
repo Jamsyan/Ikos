@@ -1,6 +1,7 @@
 """Ikos 主程序入口."""
 
 import sys
+
 from loguru import logger
 
 from ikos.core.pipeline import IkosPipeline

@@ -6,7 +6,8 @@ from typing import Any, Optional
 from loguru import logger
 
 from .hardware_detector import HardwareInfo
-from .quantization_config import QuantizationConfig, QuantizationLoader, auto_recommend_quantization
+from .quantization_config import (QuantizationConfig, QuantizationLoader,
+                                  auto_recommend_quantization)
 from .vram_manager import VRAMManager
 
 
@@ -208,8 +209,9 @@ class NativeModelLoader:
             logger.warning(f"模型未加载：{model_name}")
             return False
 
-        import torch
         import gc
+
+        import torch
 
         model, tokenizer = self._loaded_models.pop(model_name)
 

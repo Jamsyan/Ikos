@@ -1,9 +1,10 @@
 """集成测试 - 端到端流程测试."""
 
-import pytest
-from pathlib import Path
 import sys
 import tempfile
+from pathlib import Path
+
+import pytest
 
 # 添加项目根目录到路径
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -38,7 +39,7 @@ class TestIntegration:
     def test_mock_full_pipeline(self):
         """测试模拟完整流程（使用 Mock）。"""
         from ikos.core.model_provider import ModelResponse
-        
+
         # Mock 所有组件
         class MockModelProvider:
             def call(self, prompt, model, **kwargs):

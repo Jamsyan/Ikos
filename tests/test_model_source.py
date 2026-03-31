@@ -1,8 +1,9 @@
 """测试模型源选择器。"""
 
-import pytest
-from pathlib import Path
 import sys
+from pathlib import Path
+
+import pytest
 
 # 添加项目根目录到路径
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -14,7 +15,7 @@ class TestModelSourceSelector:
     def test_selector_initialization(self):
         """测试选择器初始化。"""
         from ikos.utils.model_source import ModelSourceSelector
-        
+
         # 默认 auto
         selector = ModelSourceSelector()
         assert selector.preferred == "auto"
@@ -40,7 +41,7 @@ class TestModelSourceSelector:
     def test_selector_detect_preferred(self):
         """测试使用首选源。"""
         from ikos.utils.model_source import ModelSourceSelector
-        
+
         # 指定魔塔
         selector = ModelSourceSelector(preferred="modelscope")
         result = selector.detect()
@@ -81,12 +82,9 @@ class TestModelSourceSelector:
     
     def test_convenience_functions(self):
         """测试便捷函数。"""
-        from ikos.utils.model_source import (
-            get_model_source,
-            is_modelscope,
-            is_huggingface
-        )
-        
+        from ikos.utils.model_source import (get_model_source, is_huggingface,
+                                             is_modelscope)
+
         # get_model_source
         source = get_model_source(preferred="auto")
         assert source in ["modelscope", "huggingface"]
@@ -115,7 +113,7 @@ class TestModelSourceSelector:
     def test_get_api_endpoint(self):
         """测试获取 API 端点。"""
         from ikos.utils.model_source import ModelSourceSelector
-        
+
         # 魔塔端点
         selector = ModelSourceSelector(preferred="modelscope")
         endpoint = selector.get_api_endpoint()
@@ -132,8 +130,9 @@ class TestModelDownloader:
     
     def test_downloader_initialization(self):
         """测试下载器初始化。"""
-        from ikos.utils.model_downloader import ModelDownloader
         import tempfile
+
+        from ikos.utils.model_downloader import ModelDownloader
         
         with tempfile.TemporaryDirectory() as tmpdir:
             downloader = ModelDownloader(cache_dir=tmpdir)
@@ -143,8 +142,9 @@ class TestModelDownloader:
     
     def test_downloader_get_model_path(self):
         """测试获取模型路径。"""
-        from ikos.utils.model_downloader import ModelDownloader
         import tempfile
+
+        from ikos.utils.model_downloader import ModelDownloader
         
         with tempfile.TemporaryDirectory() as tmpdir:
             downloader = ModelDownloader(cache_dir=tmpdir)
@@ -155,8 +155,9 @@ class TestModelDownloader:
     
     def test_download_function(self):
         """测试便捷下载函数。"""
-        from ikos.utils.model_downloader import download_model
         import tempfile
+
+        from ikos.utils.model_downloader import download_model
         
         with tempfile.TemporaryDirectory() as tmpdir:
             # 注意：这个测试需要网络连接，可能会失败
