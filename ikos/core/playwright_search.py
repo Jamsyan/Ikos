@@ -4,7 +4,8 @@ from typing import Any
 
 from loguru import logger
 
-from .search_provider import SearchProvider, SearchResult, WebContent
+from .search_provider_base import SearchProvider
+from .types import SearchResult, WebContent
 
 
 class PlaywrightSearchProvider(SearchProvider):

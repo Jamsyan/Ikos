@@ -1,6 +1,5 @@
-"""模型缓存管理器 - 专注魔塔社区。"""
+"""模型缓存管理器 - 管理多来源模型缓存。"""
 
-import hashlib
 import json
 import shutil
 from datetime import datetime
@@ -11,10 +10,10 @@ from loguru import logger
 
 
 class ModelCacheManager:
-    """魔塔社区模型缓存管理器。"""
-    
+    """模型缓存管理器。"""
+
     CACHE_ROOT = Path.home() / ".cache" / "ikos"
-    MODELS_DIR = CACHE_ROOT / "models" / "modelscope"
+    MODELS_DIR = CACHE_ROOT / "models"
     TEMP_DIR = CACHE_ROOT / "temp"
     METADATA_FILE = "metadata.json"
     
@@ -45,19 +44,32 @@ class ModelCacheManager:
     
     def __init__(self, cache_dir: str | Path | None = None):
         """初始化缓存管理器。"""
-        self.cache_root = Path(cache_dir) if cache_dir else self.CACHE_ROOT
-        self.models_dir = self.cache_root / "models" / "modelscope"
-        self.temp_dir = self.cache_root / "temp"
-        
+        if cache_dir is None:
+            self.cache_root = self.CACHE_ROOT
+            self.models_dir = self.MODELS_DIR
+            self.temp_dir = self.TEMP_DIR
+        else:
+            self.models_dir = Path(cache_dir)
+            self.cache_root = self.models_dir.parent
+            self.temp_dir = self.cache_root / "temp"
+
         self.models_dir.mkdir(parents=True, exist_ok=True)
         self.temp_dir.mkdir(parents=True, exist_ok=True)
-        
-        logger.info("缓存管理器已初始化，目录：%s", self.cache_root)
+
+        logger.info("缓存管理器已初始化，模型目录：{}", self.models_dir)
+
+    def get_source_dir(self, source: str) -> Path:
+        """获取指定来源的缓存目录。"""
+        source_dir = self.models_dir / source
+        source_dir.mkdir(parents=True, exist_ok=True)
+        return source_dir
     
     def get_model_path(
         self,
         model_id: str,
-        revision: str = "master"
+        revision: str = "master",
+        source: str = "modelscope",
+        create: bool = False,
     ) -> Path:
         """获取模型缓存路径。
         
@@ -76,12 +88,14 @@ class ModelCacheManager:
             org = "default"
             model = parts[0]
         
-        # 构建路径：models/modelscope/{org}/{model}/{revision}
-        model_path = self.models_dir / org / model / revision
-        
-        # 确保目录存在
-        model_path.mkdir(parents=True, exist_ok=True)
-        
+        source_dir = self.get_source_dir(source)
+
+        # 构建路径：models/{source}/{org}/{model}/{revision}
+        model_path = source_dir / org / model / revision
+
+        if create:
+            model_path.mkdir(parents=True, exist_ok=True)
+
         return model_path
     
     def save_metadata(
@@ -89,6 +103,7 @@ class ModelCacheManager:
         model_path: Path,
         model_id: str,
         revision: str,
+        source: str,
         download_info: dict[str, Any] | None = None
     ) -> None:
         """保存模型元数据。
@@ -103,7 +118,7 @@ class ModelCacheManager:
             "model_id": model_id,
             "revision": revision,
             "downloaded_at": datetime.now().isoformat(),
-            "source": "modelscope",
+            "source": source,
             "files_count": 0,
             "total_size": 0,
             "download_info": download_info or {},
@@ -119,8 +134,8 @@ class ModelCacheManager:
         metadata_file = model_path / self.METADATA_FILE
         with open(metadata_file, "w", encoding="utf-8") as f:
             json.dump(metadata, f, ensure_ascii=False, indent=2)
-        
-        logger.debug("元数据已保存：{metadata_file}")
+
+        logger.debug("元数据已保存：{}", metadata_file)
     
     def load_metadata(self, model_path: Path) -> dict[str, Any]:
         """加载模型元数据。
@@ -177,12 +192,12 @@ class ModelCacheManager:
             if should_remove:
                 try:
                     file.unlink()
-                    logger.debug("清理文件：{file}")
+                    logger.debug("清理文件：{}", file)
                     cleaned_count += 1
                 except Exception as e:
-                    logger.warning("清理文件失败 {file}: {e}")
-        
-        logger.info("清理完成，共清理 {cleaned_count} 个文件")
+                    logger.warning("清理文件失败 {}: {}", file, e)
+
+        logger.info("清理完成，共清理 {} 个文件", cleaned_count)
         return cleaned_count
     
     def verify_integrity(self, model_path: Path) -> dict[str, Any]:
@@ -255,41 +270,115 @@ class ModelCacheManager:
             "newest_model": None,
         }
         
-        if not self.models_dir.exists():
-            return stats
-        
-        # 遍历所有模型
-        for org_dir in self.models_dir.iterdir():
-            if not org_dir.is_dir():
-                continue
-            
-            org_name = org_dir.name
-            stats["models_by_org"][org_name] = 0
-            
-            for model_dir in org_dir.iterdir():
-                if not model_dir.is_dir():
-                    continue
-                
-                stats["total_models"] += 1
-                stats["models_by_org"][org_name] += 1
-                
-                # 计算大小
-                for revision_dir in model_dir.iterdir():
-                    if revision_dir.is_dir():
-                        size = sum(f.stat().st_size for f in revision_dir.rglob("*") if f.is_file())
-                        stats["total_size"] += size
-                        
-                        # 检查元数据
-                        metadata = self.load_metadata(revision_dir)
-                        if metadata:
-                            downloaded_at = metadata.get("downloaded_at")
-                            if downloaded_at:
-                                if not stats["oldest_model"] or downloaded_at < stats["oldest_model"][1]:
-                                    stats["oldest_model"] = (str(revision_dir), downloaded_at)
-                                if not stats["newest_model"] or downloaded_at > stats["newest_model"][1]:
-                                    stats["newest_model"] = (str(revision_dir), downloaded_at)
-        
+        for model_info in self.list_cached_models():
+            org_name = model_info.get("name", "unknown").split("/")[0]
+            stats["models_by_org"].setdefault(org_name, 0)
+            stats["models_by_org"][org_name] += 1
+            stats["total_models"] += 1
+            stats["total_size"] += int(model_info.get("total_size", 0))
+
+            downloaded_at = model_info.get("downloaded_at")
+            if downloaded_at:
+                if not stats["oldest_model"] or downloaded_at < stats["oldest_model"][1]:
+                    stats["oldest_model"] = (model_info["path"], downloaded_at)
+                if not stats["newest_model"] or downloaded_at > stats["newest_model"][1]:
+                    stats["newest_model"] = (model_info["path"], downloaded_at)
+
         return stats
+
+    def list_cached_models(self) -> list[dict[str, Any]]:
+        """列出已缓存模型。"""
+        models: dict[tuple[str, str, str], dict[str, Any]] = {}
+
+        for metadata_file in self.models_dir.rglob(self.METADATA_FILE):
+            model_path = metadata_file.parent
+            metadata = self.load_metadata(model_path)
+            model_id = metadata.get("model_id")
+            revision = metadata.get("revision", "unknown")
+            source = metadata.get("source", "unknown")
+            if not model_id:
+                continue
+
+            key = (model_id, revision, source)
+            models[key] = {
+                "name": model_id,
+                "revision": revision,
+                "source": source,
+                "path": str(model_path),
+                "downloaded_at": metadata.get("downloaded_at", ""),
+                "files_count": metadata.get("files_count", 0),
+                "total_size": metadata.get("total_size", 0),
+            }
+
+        if models:
+            return sorted(
+                models.values(),
+                key=lambda item: item.get("downloaded_at", ""),
+                reverse=True,
+            )
+
+        return self._discover_legacy_models()
+
+    def find_model_path(self, model_id: str, revision: str | None = "master") -> Path | None:
+        """根据元数据查找已缓存模型路径。"""
+        for model_info in self.list_cached_models():
+            if model_info.get("name") != model_id:
+                continue
+            if revision is not None and model_info.get("revision") != revision:
+                continue
+
+            model_path = Path(model_info["path"])
+            if model_path.exists():
+                return model_path
+
+        return None
+
+    def _discover_legacy_models(self) -> list[dict[str, Any]]:
+        """兜底扫描旧缓存目录。"""
+        candidates: dict[str, dict[str, Any]] = {}
+        for config_file in self.models_dir.rglob("config.json"):
+            model_path = config_file.parent
+            if not any(model_path.glob(pattern) for pattern in ("*.safetensors", "*.bin")):
+                continue
+
+            model_name = self._infer_model_name(model_path)
+            candidates[str(model_path)] = {
+                "name": model_name,
+                "revision": "unknown",
+                "source": self._infer_source(model_path),
+                "path": str(model_path),
+                "downloaded_at": "",
+                "files_count": len([file for file in model_path.rglob("*") if file.is_file()]),
+                "total_size": sum(file.stat().st_size for file in model_path.rglob("*") if file.is_file()),
+            }
+
+        return sorted(candidates.values(), key=lambda item: item["name"])
+
+    def _infer_model_name(self, model_path: Path) -> str:
+        """根据目录结构推断模型名。"""
+        parts = list(model_path.parts)
+        if "modelscope" in parts:
+            index = parts.index("modelscope")
+            if len(parts) >= index + 4:
+                return f"{parts[index + 1]}/{parts[index + 2]}"
+
+        for part in reversed(parts):
+            if part.startswith("models--"):
+                return part.replace("models--", "").replace("--", "/")
+
+        if len(parts) >= 2:
+            return f"{parts[-2]}/{parts[-1]}"
+
+        return model_path.name
+
+    def _infer_source(self, model_path: Path) -> str:
+        """根据目录结构推断来源。"""
+        parts = set(model_path.parts)
+        if "modelscope" in parts:
+            return "modelscope"
+        if "huggingface" in parts:
+            return "huggingface"
+        return "unknown"
     
     def clear_cache(
         self,
@@ -308,11 +397,10 @@ class ModelCacheManager:
         cleaned_count = 0
         
         if model_id:
-            # 清除指定模型
-            model_path = self.get_model_path(model_id)
-            if model_path.exists():
+            model_path = self.find_model_path(model_id, revision=None)
+            if model_path and model_path.exists():
                 shutil.rmtree(model_path)
-                logger.info("已清除模型：{model_id}")
+                logger.info("已清除模型：{}", model_id)
                 cleaned_count = 1
         elif older_than_days:
             # 清除旧模型
@@ -338,10 +426,10 @@ class ModelCacheManager:
                                     download_time = datetime.fromisoformat(downloaded_at).timestamp()
                                     if download_time < cutoff_date:
                                         shutil.rmtree(revision_dir)
-                                        logger.info("清除旧模型：{revision_dir}")
+                                        logger.info("清除旧模型：{}", revision_dir)
                                         cleaned_count += 1
                                 except Exception as e:
-                                    logger.warning("解析时间失败：{e}")
+                                    logger.warning("解析时间失败：{}", e)
         else:
             # 清除所有
             if self.models_dir.exists():
@@ -359,19 +447,19 @@ class ModelCacheManager:
         logger.info("=" * 60)
         logger.info("缓存统计")
         logger.info("=" * 60)
-        logger.info("总模型数：%d", stats['total_models'])
-        logger.info("总大小：%s", self._format_size(stats['total_size']))
+        logger.info("总模型数：{}", stats['total_models'])
+        logger.info("总大小：{}", self._format_size(stats['total_size']))
         logger.info("按组织统计:")
         for org, count in stats['models_by_org'].items():
-            logger.info("  %s: %d 个模型", org, count)
+            logger.info("  {}: {} 个模型", org, count)
         
         if stats['oldest_model']:
-            logger.info("最早下载：%s", stats['oldest_model'][0])
-            logger.info("  时间：%s", stats['oldest_model'][1])
+            logger.info("最早下载：{}", stats['oldest_model'][0])
+            logger.info("  时间：{}", stats['oldest_model'][1])
         
         if stats['newest_model']:
-            logger.info("最近下载：%s", stats['newest_model'][0])
-            logger.info("  时间：%s", stats['newest_model'][1])
+            logger.info("最近下载：{}", stats['newest_model'][0])
+            logger.info("  时间：{}", stats['newest_model'][1])
         
         logger.info("=" * 60)
     

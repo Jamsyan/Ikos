@@ -1,4 +1,4 @@
-"""硬件监控面板 - 实时显示 GPU/CPU/内存状态."""
+"""硬件监控面板 - 紧凑版，实时显示 GPU/CPU/内存状态."""
 
 from loguru import logger
 from PyQt6.QtCore import QTimer
@@ -7,7 +7,7 @@ from PyQt6.QtWidgets import (QGroupBox, QHBoxLayout, QLabel, QProgressBar,
 
 
 class HardwareMonitorPanel(QGroupBox):
-    """硬件监控面板."""
+    """硬件监控面板 - 紧凑版."""
 
     def __init__(self, update_interval: int = 2000):
         """初始化硬件监控面板.
@@ -24,7 +24,7 @@ class HardwareMonitorPanel(QGroupBox):
         self._start_monitoring()
 
     def _init_ui(self) -> None:
-        """初始化 UI."""
+        """初始化 UI - 紧凑布局."""
         self.setStyleSheet("""
             QGroupBox {
                 font-size: 13px;
@@ -33,112 +33,107 @@ class HardwareMonitorPanel(QGroupBox):
                 border: 1px solid #e0e0e0;
                 border-radius: 6px;
                 margin-top: 0;
-                padding-top: 12px;
+                padding-top: 10px;
             }
             QGroupBox::title {
                 subcontrol-origin: margin;
-                left: 12px;
+                left: 10px;
                 padding: 0 4px;
                 color: #333333;
             }
         """)
 
         layout = QVBoxLayout(self)
-        layout.setSpacing(12)
-        layout.setContentsMargins(12, 12, 12, 12)
+        layout.setSpacing(8)
+        layout.setContentsMargins(10, 8, 10, 8)
 
-        # GPU 信息
+        # 第一行：GPU + 显存
+        gpu_layout = QHBoxLayout()
+        gpu_layout.setSpacing(8)
+
         self.gpu_label = QLabel("GPU: 检测中...")
-        self.gpu_label.setStyleSheet("color: #666666; font-size: 12px;")
-        layout.addWidget(self.gpu_label)
+        self.gpu_label.setStyleSheet("color: #666666; font-size: 11px;")
+        self.gpu_label.setWordWrap(True)
+        gpu_layout.addWidget(self.gpu_label)
 
-        # 显存进度条
-        vram_layout = QHBoxLayout()
-        vram_layout.setSpacing(8)
-
-        vram_label = QLabel("显存:")
-        vram_label.setStyleSheet("color: #666666; font-size: 12px;")
-        vram_layout.addWidget(vram_label)
-
+        # 显存进度条（小型）
         self.vram_progress = QProgressBar()
-        self.vram_progress.setFixedHeight(20)
+        self.vram_progress.setFixedHeight(16)
+        self.vram_progress.setFixedWidth(100)
         self.vram_progress.setStyleSheet("""
             QProgressBar {
                 background-color: #f0f0f0;
                 border: 1px solid #d9d9d9;
-                border-radius: 3px;
+                border-radius: 2px;
                 text-align: center;
                 color: #666666;
-                font-size: 11px;
+                font-size: 9px;
             }
             QProgressBar::chunk {
                 background-color: #1890ff;
-                border-radius: 3px;
+                border-radius: 2px;
             }
         """)
-        vram_layout.addWidget(self.vram_progress)
+        gpu_layout.addWidget(self.vram_progress)
 
-        self.vram_value_label = QLabel("0 / 0 GB")
-        self.vram_value_label.setStyleSheet("color: #333333; font-size: 11px; min-width: 80px;")
-        vram_layout.addWidget(self.vram_value_label)
+        self.vram_value_label = QLabel("0/0GB")
+        self.vram_value_label.setStyleSheet("color: #333333; font-size: 10px; min-width: 50px;")
+        gpu_layout.addWidget(self.vram_value_label)
 
-        layout.addLayout(vram_layout)
+        layout.addLayout(gpu_layout)
 
-        # CPU 信息
+        # 第二行：CPU + 内存
+        cpu_layout = QHBoxLayout()
+        cpu_layout.setSpacing(8)
+
         self.cpu_label = QLabel("CPU: 检测中...")
-        self.cpu_label.setStyleSheet("color: #666666; font-size: 12px;")
-        layout.addWidget(self.cpu_label)
+        self.cpu_label.setStyleSheet("color: #666666; font-size: 11px;")
+        cpu_layout.addWidget(self.cpu_label)
 
-        # 内存进度条
-        ram_layout = QHBoxLayout()
-        ram_layout.setSpacing(8)
-
-        ram_label = QLabel("内存:")
-        ram_label.setStyleSheet("color: #666666; font-size: 12px;")
-        ram_layout.addWidget(ram_label)
-
+        # 内存进度条（小型）
         self.ram_progress = QProgressBar()
-        self.ram_progress.setFixedHeight(20)
+        self.ram_progress.setFixedHeight(16)
+        self.ram_progress.setFixedWidth(100)
         self.ram_progress.setStyleSheet("""
             QProgressBar {
                 background-color: #f0f0f0;
                 border: 1px solid #d9d9d9;
-                border-radius: 3px;
+                border-radius: 2px;
                 text-align: center;
                 color: #666666;
-                font-size: 11px;
+                font-size: 9px;
             }
             QProgressBar::chunk {
                 background-color: #52c41a;
-                border-radius: 3px;
+                border-radius: 2px;
             }
         """)
-        ram_layout.addWidget(self.ram_progress)
+        cpu_layout.addWidget(self.ram_progress)
 
-        self.ram_value_label = QLabel("0 / 0 GB")
-        self.ram_value_label.setStyleSheet("color: #333333; font-size: 11px; min-width: 80px;")
-        ram_layout.addWidget(self.ram_value_label)
+        self.ram_value_label = QLabel("0/0GB")
+        self.ram_value_label.setStyleSheet("color: #333333; font-size: 10px; min-width: 50px;")
+        cpu_layout.addWidget(self.ram_value_label)
 
-        layout.addLayout(ram_layout)
+        layout.addLayout(cpu_layout)
 
-        # 引擎模式
+        # 第三行：引擎模式
         engine_layout = QHBoxLayout()
-        engine_layout.setSpacing(8)
+        engine_layout.setSpacing(6)
 
         engine_label = QLabel("引擎:")
-        engine_label.setStyleSheet("color: #666666; font-size: 12px;")
+        engine_label.setStyleSheet("color: #999999; font-size: 10px;")
         engine_layout.addWidget(engine_label)
 
         self.engine_mode_label = QLabel("未选择")
         self.engine_mode_label.setStyleSheet("""
             QLabel {
-                background-color: #e6f7ff;
-                border: 1px solid #1890ff;
-                border-radius: 4px;
-                padding: 4px 12px;
-                color: #1890ff;
+                background-color: #f0f0f0;
+                border: 1px solid #d9d9d9;
+                border-radius: 3px;
+                padding: 2px 8px;
+                color: #666666;
                 font-weight: bold;
-                font-size: 12px;
+                font-size: 10px;
             }
         """)
         engine_layout.addWidget(self.engine_mode_label)
@@ -179,12 +174,11 @@ class HardwareMonitorPanel(QGroupBox):
                     percent = int((used / total) * 100)
                     self.vram_progress.setValue(percent)
                     self.vram_progress.setFormat(f"{percent}%")
-                    self.vram_value_label.setText(f"{used:.1f} / {total:.1f} GB")
+                    self.vram_value_label.setText(f"{used:.1f}/{total:.1f}GB")
 
             # 更新 CPU 信息
             self.cpu_label.setText(
-                f"CPU: {self._hardware_info.cpu_physical_cores} 物理核心 | "
-                f"{self._hardware_info.cpu_cores} 逻辑核心"
+                f"CPU: {self._hardware_info.cpu_physical_cores}C/{self._hardware_info.cpu_cores}T"
             )
 
             # 更新内存使用
@@ -196,7 +190,7 @@ class HardwareMonitorPanel(QGroupBox):
                 ram_percent = int((used_ram / total_ram) * 100)
                 self.ram_progress.setValue(ram_percent)
                 self.ram_progress.setFormat(f"{ram_percent}%")
-                self.ram_value_label.setText(f"{used_ram:.1f} / {total_ram:.1f} GB")
+                self.ram_value_label.setText(f"{used_ram:.1f}/{total_ram:.1f}GB")
 
         except Exception as e:
             logger.error(f"更新硬件信息失败：{e}")
@@ -230,11 +224,11 @@ class HardwareMonitorPanel(QGroupBox):
             QLabel {{
                 background-color: {bg_color};
                 border: 1px solid {text_color};
-                border-radius: 4px;
-                padding: 4px 12px;
+                border-radius: 3px;
+                padding: 2px 8px;
                 color: {text_color};
                 font-weight: bold;
-                font-size: 12px;
+                font-size: 10px;
             }}
         """)
 

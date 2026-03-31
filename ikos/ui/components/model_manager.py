@@ -1,10 +1,10 @@
-"""模型管理面板 - 模型下载、切换与管理."""
+"""模型管理面板 - 紧凑版，模型下载、切换与管理."""
 
 from loguru import logger
 from PyQt6.QtCore import QThread, pyqtSignal
 from PyQt6.QtWidgets import (QComboBox, QGroupBox, QHBoxLayout, QLabel,
-                             QListWidget, QListWidgetItem, QMessageBox,
-                             QProgressBar, QPushButton, QVBoxLayout, QWidget)
+                             QMessageBox, QProgressBar, QPushButton,
+                             QVBoxLayout, QWidget)
 
 
 class ModelDownloadThread(QThread):
@@ -41,18 +41,19 @@ class ModelDownloadThread(QThread):
 
 
 class ModelManagerPanel(QGroupBox):
-    """模型管理面板."""
+    """模型管理面板 - 紧凑版."""
 
     model_selected = pyqtSignal(str)  # 模型被选中
     model_downloaded = pyqtSignal(str)  # 模型下载完成
 
     def __init__(self):
         super().__init__("模型管理")
+        self._downloaded_models = []
         self._init_ui()
         self._refresh_cached_models()
 
     def _init_ui(self) -> None:
-        """初始化 UI."""
+        """初始化 UI - 紧凑布局."""
         self.setStyleSheet("""
             QGroupBox {
                 font-size: 13px;
@@ -61,37 +62,33 @@ class ModelManagerPanel(QGroupBox):
                 border: 1px solid #e0e0e0;
                 border-radius: 6px;
                 margin-top: 0;
-                padding-top: 12px;
+                padding-top: 10px;
             }
             QGroupBox::title {
                 subcontrol-origin: margin;
-                left: 12px;
+                left: 10px;
                 padding: 0 4px;
                 color: #333333;
             }
         """)
 
         layout = QVBoxLayout(self)
-        layout.setSpacing(12)
-        layout.setContentsMargins(12, 12, 12, 12)
+        layout.setSpacing(8)
+        layout.setContentsMargins(10, 8, 10, 8)
 
-        # 模型选择
+        # 模型选择 + 下载按钮（一行）
         select_layout = QHBoxLayout()
-        select_layout.setSpacing(8)
-
-        select_label = QLabel("选择模型:")
-        select_label.setStyleSheet("color: #666666; font-size: 12px;")
-        select_layout.addWidget(select_label)
+        select_layout.setSpacing(6)
 
         self.model_combo = QComboBox()
-        self.model_combo.setFixedHeight(32)
+        self.model_combo.setFixedHeight(30)
         self.model_combo.setStyleSheet("""
             QComboBox {
                 border: 1px solid #d9d9d9;
                 border-radius: 4px;
-                padding: 0 10px;
+                padding: 0 8px;
                 color: #333333;
-                font-size: 12px;
+                font-size: 11px;
             }
             QComboBox:hover {
                 border-color: #1890ff;
@@ -100,18 +97,16 @@ class ModelManagerPanel(QGroupBox):
         self.model_combo.currentTextChanged.connect(self._on_model_changed)
         select_layout.addWidget(self.model_combo)
 
-        layout.addLayout(select_layout)
-
-        # 下载按钮
-        self.download_btn = QPushButton("下载选中模型")
-        self.download_btn.setFixedHeight(36)
+        self.download_btn = QPushButton("下载")
+        self.download_btn.setFixedHeight(30)
+        self.download_btn.setFixedWidth(72)
         self.download_btn.setStyleSheet("""
             QPushButton {
                 background-color: #1890ff;
                 color: white;
                 border: none;
                 border-radius: 4px;
-                font-size: 13px;
+                font-size: 11px;
                 font-weight: bold;
             }
             QPushButton:hover {
@@ -126,67 +121,53 @@ class ModelManagerPanel(QGroupBox):
             }
         """)
         self.download_btn.clicked.connect(self._download_model)
-        layout.addWidget(self.download_btn)
+        select_layout.addWidget(self.download_btn)
 
-        # 下载进度
+        layout.addLayout(select_layout)
+
+        # 下载进度（小型）
         self.download_progress = QProgressBar()
-        self.download_progress.setFixedHeight(20)
+        self.download_progress.setFixedHeight(16)
         self.download_progress.setStyleSheet("""
             QProgressBar {
                 background-color: #f0f0f0;
                 border: 1px solid #d9d9d9;
-                border-radius: 3px;
+                border-radius: 2px;
                 text-align: center;
                 color: #666666;
-                font-size: 11px;
+                font-size: 9px;
             }
             QProgressBar::chunk {
                 background-color: #1890ff;
-                border-radius: 3px;
+                border-radius: 2px;
             }
         """)
         self.download_progress.setVisible(False)
         layout.addWidget(self.download_progress)
 
-        # 已下载模型列表
-        list_label = QLabel("已下载模型:")
-        list_label.setStyleSheet("color: #666666; font-size: 12px; font-weight: bold;")
+        # 已下载模型标签
+        list_label = QLabel("已下载:")
+        list_label.setStyleSheet("color: #999999; font-size: 10px; font-weight: bold;")
         layout.addWidget(list_label)
 
-        self.model_list = QListWidget()
-        self.model_list.setFixedHeight(150)
-        self.model_list.setStyleSheet("""
-            QListWidget {
-                border: 1px solid #d9d9d9;
-                border-radius: 4px;
-                background-color: #fafafa;
-                font-size: 12px;
-            }
-            QListWidget::item {
-                padding: 6px 8px;
-                border-bottom: 1px solid #e8e8e8;
-            }
-            QListWidget::item:selected {
-                background-color: #e6f7ff;
-                color: #1890ff;
-            }
-            QListWidget::item:hover {
-                background-color: #f0f0f0;
-            }
-        """)
-        self.model_list.itemClicked.connect(self._on_list_item_clicked)
-        layout.addWidget(self.model_list)
+        # 已下载模型（使用 Flow 布局的标签）
+        self.downloaded_models_widget = QWidget()
+        self.downloaded_models_layout = QHBoxLayout(self.downloaded_models_widget)
+        self.downloaded_models_layout.setSpacing(4)
+        self.downloaded_models_layout.setContentsMargins(0, 0, 0, 0)
+        self.downloaded_models_layout.addStretch()
+        layout.addWidget(self.downloaded_models_widget)
 
         # 刷新按钮
         refresh_btn = QPushButton("刷新列表")
-        refresh_btn.setFixedHeight(32)
+        refresh_btn.setFixedHeight(28)
         refresh_btn.setStyleSheet("""
             QPushButton {
                 background-color: #f0f0f0;
                 color: #666666;
                 border: 1px solid #d9d9d9;
                 border-radius: 4px;
-                font-size: 12px;
+                font-size: 11px;
             }
             QPushButton:hover {
                 background-color: #e8e8e8;
@@ -194,6 +175,35 @@ class ModelManagerPanel(QGroupBox):
         """)
         refresh_btn.clicked.connect(self._refresh_cached_models)
         layout.addWidget(refresh_btn)
+
+    def _create_model_tag(self, model_name: str) -> QLabel:
+        """创建模型标签.
+
+        Args:
+            model_name: 模型名称
+
+        Returns:
+            QLabel: 标签组件
+        """
+        # 简化模型名称显示
+        short_name = model_name.split("/")[-1] if "/" in model_name else model_name
+        if len(short_name) > 20:
+            short_name = short_name[:17] + "..."
+
+        tag = QLabel(short_name)
+        tag.setStyleSheet("""
+            QLabel {
+                background-color: #e6f7ff;
+                border: 1px solid #1890ff;
+                border-radius: 3px;
+                padding: 2px 6px;
+                color: #1890ff;
+                font-size: 10px;
+                font-weight: bold;
+            }
+        """)
+        tag.setToolTip(model_name)
+        return tag
 
     def _refresh_cached_models(self) -> None:
         """刷新已缓存模型列表."""
@@ -208,14 +218,33 @@ class ModelManagerPanel(QGroupBox):
                 # 如果方法不存在，返回空列表
                 cached = []
 
-            self.model_list.clear()
-            for model in cached:
-                if isinstance(model, dict):
-                    item = QListWidgetItem(model.get("name", "Unknown"))
-                    item.setData(1, model)  # 存储完整信息
-                else:
-                    item = QListWidgetItem(str(model))
-                self.model_list.addItem(item)
+            # 清空现有标签
+            self._downloaded_models = []
+            
+            # 清空布局
+            while self.downloaded_models_layout.count() > 1:
+                item = self.downloaded_models_layout.takeAt(0)
+                if item.widget():
+                    item.widget().deleteLater()
+
+            # 添加新标签
+            if not cached:
+                empty_label = QLabel("暂无已缓存模型")
+                empty_label.setStyleSheet("color: #bfbfbf; font-size: 10px;")
+                self.downloaded_models_layout.insertWidget(0, empty_label)
+            else:
+                for model in cached:
+                    if isinstance(model, dict):
+                        model_name = model.get("name", "Unknown")
+                    else:
+                        model_name = str(model)
+
+                    tag = self._create_model_tag(model_name)
+                    self.downloaded_models_layout.insertWidget(
+                        self.downloaded_models_layout.count() - 1,
+                        tag
+                    )
+                    self._downloaded_models.append(model_name)
 
             logger.info(f"已刷新 {len(cached)} 个缓存模型")
 
@@ -236,8 +265,10 @@ class ModelManagerPanel(QGroupBox):
 
         # 禁用按钮
         self.download_btn.setEnabled(False)
+        self.download_btn.setText("处理中")
         self.download_progress.setVisible(True)
         self.download_progress.setValue(0)
+        self.download_progress.setFormat("准备下载")
 
         # 创建下载线程
         self.download_thread = ModelDownloadThread(model_name)
@@ -249,11 +280,12 @@ class ModelManagerPanel(QGroupBox):
     def _on_download_progress(self, percent: int, status: str) -> None:
         """下载进度更新."""
         self.download_progress.setValue(percent)
-        self.download_progress.setFormat(f"{percent}% - {status}")
+        self.download_progress.setFormat(status if status else f"{percent}%")
 
     def _on_download_finished(self, model_path: str) -> None:
         """下载完成."""
         self.download_btn.setEnabled(True)
+        self.download_btn.setText("下载")
         self.download_progress.setVisible(False)
 
         QMessageBox.information(
@@ -268,17 +300,10 @@ class ModelManagerPanel(QGroupBox):
     def _on_download_error(self, error_msg: str) -> None:
         """下载错误."""
         self.download_btn.setEnabled(True)
+        self.download_btn.setText("下载")
         self.download_progress.setVisible(False)
 
-        QMessageBox.critical(self, "下载失败", f"模型下载失败:\n{error_msg}")
-
-    def _on_list_item_clicked(self, item: QListWidgetItem) -> None:
-        """列表项点击."""
-        model_info = item.data(1)
-        if model_info:
-            model_name = model_info.get("name", "")
-            self.model_combo.setCurrentText(model_name)
-            self.model_selected.emit(model_name)
+        QMessageBox.critical(self, "下载失败", f"模型下载失败：\n{error_msg}")
 
     def add_predefined_models(self, models: list[str]) -> None:
         """添加预定义模型列表.

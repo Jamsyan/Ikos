@@ -79,7 +79,11 @@ class NativeModelLoader:
             logger.info(f"自动推荐量化等级：{quantization}")
 
         # 构建下载器
-        downloader = ModelDownloader(cache_dir=str(self.cache_dir))
+        downloader = ModelDownloader(
+            cache_dir=str(self.cache_dir),
+            preferred_source="auto",
+            allow_fallback=False,
+        )
 
         # 检查是否已缓存
         cached_path = downloader.get_model_path(model_name, revision)
