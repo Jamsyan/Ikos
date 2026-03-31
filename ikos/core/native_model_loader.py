@@ -27,6 +27,7 @@ class NativeModelLoader:
         cache_dir: Optional[str] = None,
         hardware_info: Optional[HardwareInfo] = None,
         vram_manager: Optional[VRAMManager] = None,
+        preferred_source: str = "auto",
     ):
         """初始化模型加载器.
 
@@ -40,6 +41,7 @@ class NativeModelLoader:
 
         self.hardware_info = hardware_info
         self.vram_manager = vram_manager
+        self.preferred_source = preferred_source
 
         # 延迟加载
         self._loaded_models: dict[str, Any] = {}
@@ -79,7 +81,11 @@ class NativeModelLoader:
             logger.info(f"自动推荐量化等级：{quantization}")
 
         # 构建下载器
-        downloader = ModelDownloader(cache_dir=str(self.cache_dir))
+        downloader = ModelDownloader(
+            cache_dir=str(self.cache_dir),
+            preferred_source=self.preferred_source,
+            allow_fallback=False,
+        )
 
         # 检查是否已缓存
         cached_path = downloader.get_model_path(model_name, revision)

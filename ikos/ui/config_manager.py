@@ -131,6 +131,15 @@ class UIConfigManager:
         self._config["quantization_level"] = level
         self._save_config()
 
+    def get_download_source(self) -> str:
+        """获取模型下载源偏好."""
+        return self._config.get("download_source", "auto")
+
+    def set_download_source(self, source: str) -> None:
+        """设置模型下载源偏好."""
+        self._config["download_source"] = source
+        self._save_config()
+
     def get_output_config(self) -> dict[str, Any]:
         """获取输出配置.
 

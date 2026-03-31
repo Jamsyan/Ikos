@@ -1,5 +1,6 @@
 """模型源选择器 - 智能选择魔塔社区或 Hugging Face."""
 
+import os
 import socket
 from typing import Literal
 
@@ -39,8 +40,13 @@ class ModelSourceSelector:
         """
         # 如果指定了具体源，直接返回
         if self.preferred != "auto":
-            logger.info("使用指定的模型源：%s", self.preferred)
+            logger.info("使用指定的模型源：{}", self.preferred)
             return self.preferred
+
+        env_source = self._get_env_preferred_source()
+        if env_source:
+            logger.info("使用环境变量指定的模型源：{}", env_source)
+            return env_source
         
         # 使用缓存结果
         if self._cached_result:
@@ -81,6 +87,15 @@ class ModelSourceSelector:
         # 都不可用，返回默认（魔塔）
         logger.warning("两个模型源都不可访问，默认使用魔塔社区")
         return "modelscope"
+
+    def _get_env_preferred_source(self) -> ModelSourceType | None:
+        """读取环境变量中的模型源偏好。"""
+        for key in ("IKOS_MODEL_SOURCE", "IKOS_PREFERRED_MODEL_SOURCE"):
+            value = os.getenv(key, "").strip().lower()
+            if value in {"modelscope", "huggingface"}:
+                return value  # type: ignore[return-value]
+
+        return None
     
     def _check_host(self, host: str, port: int = 443, timeout: float = 3.0) -> bool:
         """检查主机是否可访问。
