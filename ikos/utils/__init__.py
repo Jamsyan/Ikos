@@ -12,8 +12,7 @@
 from .cache_manager import ModelCacheManager, get_cache_manager
 from .config_loader import load_config, load_yaml
 from .logger import setup_logger
-from .model_source import (ModelSourceSelector, get_model_source,
-                           is_huggingface, is_modelscope)
+from .model_source import ModelSourceSelector, get_model_source, is_huggingface, is_modelscope
 
 __all__ = [
     "load_config",

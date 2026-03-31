@@ -58,7 +58,10 @@ def test_find_model_path_without_revision(tmp_path):
         download_info={"source": "huggingface"},
     )
 
-    assert manager.find_model_path(
-        "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B",
-        revision=None,
-    ) == model_path
+    assert (
+        manager.find_model_path(
+            "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B",
+            revision=None,
+        )
+        == model_path
+    )

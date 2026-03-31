@@ -3,7 +3,6 @@
 import platform
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional
 
 from loguru import logger
 
@@ -30,7 +29,7 @@ class HardwareInfo:
     """硬件信息数据类."""
 
     # GPU 信息
-    gpu_model: Optional[str] = None
+    gpu_model: str | None = None
     gpu_memory_gb: float = 0.0
     gpu_count: int = 0
 
@@ -215,7 +214,9 @@ class HardwareDetector:
             except Exception:
                 info.cpu_model = "Unknown CPU"
 
-            logger.info(f"检测到 CPU: {info.cpu_physical_cores} 物理核心 / {info.cpu_cores} 逻辑核心")
+            logger.info(
+                f"检测到 CPU: {info.cpu_physical_cores} 物理核心 / {info.cpu_cores} 逻辑核心"
+            )
         except Exception as e:
             logger.error(f"CPU 检测失败：{e}")
             info.cpu_cores = self._detect_cpu_basic()
@@ -247,7 +248,9 @@ class HardwareDetector:
             # 可用内存（GB）
             info.available_memory_gb = mem.available / (1024**3)
 
-            logger.info(f"检测到内存：{info.system_memory_gb:.1f}GB (可用：{info.available_memory_gb:.1f}GB)")
+            logger.info(
+                f"检测到内存：{info.system_memory_gb:.1f}GB (可用：{info.available_memory_gb:.1f}GB)"
+            )
         except Exception as e:
             logger.error(f"内存检测失败：{e}")
             info.system_memory_gb = self._detect_memory_basic()
@@ -325,7 +328,7 @@ class HardwareDetector:
 
 
 # 全局检测器实例（单例模式）
-_detector: Optional[HardwareDetector] = None
+_detector: HardwareDetector | None = None
 
 
 def detect_hardware() -> HardwareInfo:

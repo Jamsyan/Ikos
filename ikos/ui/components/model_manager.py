@@ -2,9 +2,17 @@
 
 from loguru import logger
 from PyQt6.QtCore import QThread, pyqtSignal
-from PyQt6.QtWidgets import (QComboBox, QGroupBox, QHBoxLayout, QLabel,
-                             QMessageBox, QProgressBar, QPushButton,
-                             QVBoxLayout, QWidget)
+from PyQt6.QtWidgets import (
+    QComboBox,
+    QGroupBox,
+    QHBoxLayout,
+    QLabel,
+    QMessageBox,
+    QProgressBar,
+    QPushButton,
+    QVBoxLayout,
+    QWidget,
+)
 
 
 class ModelDownloadThread(QThread):
@@ -111,7 +119,11 @@ class ModelDownloadThread(QThread):
         if message.startswith("清理了 "):
             return message
 
-        if message.startswith("  文件数：") or message.startswith("  总大小：") or message.startswith("  核心文件："):
+        if (
+            message.startswith("  文件数：")
+            or message.startswith("  总大小：")
+            or message.startswith("  核心文件：")
+        ):
             return message.strip()
 
         if message.startswith("从魔塔社区下载失败："):
@@ -440,7 +452,7 @@ class ModelManagerPanel(QGroupBox):
 
             # 清空现有标签
             self._downloaded_models = []
-            
+
             # 清空布局
             while self.downloaded_models_layout.count() > 1:
                 item = self.downloaded_models_layout.takeAt(0)
@@ -461,8 +473,7 @@ class ModelManagerPanel(QGroupBox):
 
                     tag = self._create_model_tag(model_name)
                     self.downloaded_models_layout.insertWidget(
-                        self.downloaded_models_layout.count() - 1,
-                        tag
+                        self.downloaded_models_layout.count() - 1, tag
                     )
                     self._downloaded_models.append(model_name)
 
@@ -545,11 +556,7 @@ class ModelManagerPanel(QGroupBox):
         self._set_download_status("下载完成，可直接使用")
         self.download_log.emit("模型下载完成，可直接使用", "success")
 
-        QMessageBox.information(
-            self,
-            "下载完成",
-            f"模型已下载到:\n{model_path}"
-        )
+        QMessageBox.information(self, "下载完成", f"模型已下载到:\n{model_path}")
 
         self.model_downloaded.emit(model_path)
         self._refresh_cached_models()

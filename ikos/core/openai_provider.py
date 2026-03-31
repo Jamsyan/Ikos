@@ -79,9 +79,7 @@ class OpenAICompatibleProvider(ModelProvider):
             logger.error(f"OpenAI 兼容 API 调用失败：{e}")
             raise
 
-    def call_batch(
-        self, prompt: str, models: list[str], **kwargs: Any
-    ) -> list[ModelResponse]:
+    def call_batch(self, prompt: str, models: list[str], **kwargs: Any) -> list[ModelResponse]:
         """批量调用多个模型.
 
         Args:
@@ -97,8 +95,7 @@ class OpenAICompatibleProvider(ModelProvider):
         results = []
         with ThreadPoolExecutor(max_workers=len(models)) as executor:
             futures = {
-                executor.submit(self.call, prompt, model, **kwargs): model
-                for model in models
+                executor.submit(self.call, prompt, model, **kwargs): model for model in models
             }
 
             for future in as_completed(futures):

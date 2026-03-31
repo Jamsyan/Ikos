@@ -16,7 +16,7 @@ class ModelCacheManager:
     MODELS_DIR = CACHE_ROOT / "models"
     TEMP_DIR = CACHE_ROOT / "temp"
     METADATA_FILE = "metadata.json"
-    
+
     # 清理无用文件，保留核心模型文件
     UNWANTED_PATTERNS = [
         "README.md",
@@ -28,7 +28,7 @@ class ModelCacheManager:
         "*.git",
         "*.md",
     ]
-    
+
     # 核心模型文件模式
     ESSENTIAL_PATTERNS = [
         "*.json",
@@ -41,7 +41,7 @@ class ModelCacheManager:
         "*.vocab",
         "*.model",
     ]
-    
+
     def __init__(self, cache_dir: str | Path | None = None):
         """初始化缓存管理器。"""
         if cache_dir is None:
@@ -63,7 +63,7 @@ class ModelCacheManager:
         source_dir = self.models_dir / source
         source_dir.mkdir(parents=True, exist_ok=True)
         return source_dir
-    
+
     def get_model_path(
         self,
         model_id: str,
@@ -72,11 +72,11 @@ class ModelCacheManager:
         create: bool = False,
     ) -> Path:
         """获取模型缓存路径。
-        
+
         Args:
             model_id: 模型 ID（格式：organization/model_name）
             revision: 版本分支
-            
+
         Returns:
             Path: 模型缓存路径
         """
@@ -87,7 +87,7 @@ class ModelCacheManager:
         else:
             org = "default"
             model = parts[0]
-        
+
         source_dir = self.get_source_dir(source)
 
         # 构建路径：models/{source}/{org}/{model}/{revision}
@@ -97,17 +97,17 @@ class ModelCacheManager:
             model_path.mkdir(parents=True, exist_ok=True)
 
         return model_path
-    
+
     def save_metadata(
         self,
         model_path: Path,
         model_id: str,
         revision: str,
         source: str,
-        download_info: dict[str, Any] | None = None
+        download_info: dict[str, Any] | None = None,
     ) -> None:
         """保存模型元数据。
-        
+
         Args:
             model_path: 模型路径
             model_id: 模型 ID
@@ -123,60 +123,60 @@ class ModelCacheManager:
             "total_size": 0,
             "download_info": download_info or {},
         }
-        
+
         # 统计文件信息
         if model_path.exists():
             files = list(model_path.rglob("*"))
             metadata["files_count"] = len([f for f in files if f.is_file()])
             metadata["total_size"] = sum(f.stat().st_size for f in files if f.is_file())
-        
+
         # 保存元数据
         metadata_file = model_path / self.METADATA_FILE
         with open(metadata_file, "w", encoding="utf-8") as f:
             json.dump(metadata, f, ensure_ascii=False, indent=2)
 
         logger.debug("元数据已保存：{}", metadata_file)
-    
+
     def load_metadata(self, model_path: Path) -> dict[str, Any]:
         """加载模型元数据。
-        
+
         Args:
             model_path: 模型路径
-            
+
         Returns:
             dict: 元数据字典
         """
         metadata_file = model_path / self.METADATA_FILE
-        
+
         if not metadata_file.exists():
             return {}
-        
-        with open(metadata_file, "r", encoding="utf-8") as f:
+
+        with open(metadata_file, encoding="utf-8") as f:
             return json.load(f)
-    
+
     def cleanup_unwanted_files(self, model_path: Path) -> int:
         """清理不需要的文件。
-        
+
         Args:
             model_path: 模型路径
-            
+
         Returns:
             int: 清理的文件数量
         """
         cleaned_count = 0
-        
+
         # 遍历所有文件
         for file in model_path.rglob("*"):
             if not file.is_file():
                 continue
-            
+
             # 跳过元数据文件
             if file.name == self.METADATA_FILE:
                 continue
-            
+
             # 检查是否需要清理
             should_remove = False
-            
+
             for pattern in self.UNWANTED_PATTERNS:
                 if pattern.startswith("*"):
                     # 通配符匹配
@@ -188,7 +188,7 @@ class ModelCacheManager:
                     if file.name == pattern:
                         should_remove = True
                         break
-            
+
             if should_remove:
                 try:
                     file.unlink()
@@ -199,13 +199,13 @@ class ModelCacheManager:
 
         logger.info("清理完成，共清理 {} 个文件", cleaned_count)
         return cleaned_count
-    
+
     def verify_integrity(self, model_path: Path) -> dict[str, Any]:
         """验证模型完整性。
-        
+
         Args:
             model_path: 模型路径
-            
+
         Returns:
             dict: 验证结果
         """
@@ -215,50 +215,50 @@ class ModelCacheManager:
             "total_size": 0,
             "essential_files": [],
             "missing_files": [],
-            "errors": []
+            "errors": [],
         }
-        
+
         if not model_path.exists():
             result["valid"] = False
             result["errors"].append("模型目录不存在")
             return result
-        
+
         # 统计文件
         files = list(model_path.rglob("*"))
         result["files_count"] = len([f for f in files if f.is_file()])
         result["total_size"] = sum(f.stat().st_size for f in files if f.is_file())
-        
+
         # 检查核心文件
         has_config = False
         has_model = False
-        
+
         for pattern in self.ESSENTIAL_PATTERNS:
             matched_files = list(model_path.glob(f"**/{pattern}"))
-            
+
             if "config" in pattern.lower() or pattern == "*.json":
                 if matched_files:
                     has_config = True
                     result["essential_files"].extend([str(f) for f in matched_files[:5]])
-            
+
             if any(x in pattern.lower() for x in ["bin", "safetensors", "pt", "pth", "onnx"]):
                 if matched_files:
                     has_model = True
                     result["essential_files"].extend([str(f) for f in matched_files[:5]])
-        
+
         # 验证完整性
         if not has_config:
             result["valid"] = False
             result["missing_files"].append("配置文件 (config.json)")
-        
+
         if not has_model:
             result["valid"] = False
             result["missing_files"].append("模型文件 (*.bin/*.safetensors)")
-        
+
         return result
-    
+
     def get_cache_stats(self) -> dict[str, Any]:
         """获取缓存统计信息。
-        
+
         Returns:
             dict: 统计信息
         """
@@ -269,7 +269,7 @@ class ModelCacheManager:
             "oldest_model": None,
             "newest_model": None,
         }
-        
+
         for model_info in self.list_cached_models():
             org_name = model_info.get("name", "unknown").split("/")[0]
             stats["models_by_org"].setdefault(org_name, 0)
@@ -349,7 +349,9 @@ class ModelCacheManager:
                 "path": str(model_path),
                 "downloaded_at": "",
                 "files_count": len([file for file in model_path.rglob("*") if file.is_file()]),
-                "total_size": sum(file.stat().st_size for file in model_path.rglob("*") if file.is_file()),
+                "total_size": sum(
+                    file.stat().st_size for file in model_path.rglob("*") if file.is_file()
+                ),
             }
 
         return sorted(candidates.values(), key=lambda item: item["name"])
@@ -379,23 +381,19 @@ class ModelCacheManager:
         if "huggingface" in parts:
             return "huggingface"
         return "unknown"
-    
-    def clear_cache(
-        self,
-        model_id: str | None = None,
-        older_than_days: int | None = None
-    ) -> int:
+
+    def clear_cache(self, model_id: str | None = None, older_than_days: int | None = None) -> int:
         """清除缓存。
-        
+
         Args:
             model_id: 指定模型 ID（None 表示清除所有）
             older_than_days: 清除超过指定天数的模型
-            
+
         Returns:
             int: 清理的模型数量
         """
         cleaned_count = 0
-        
+
         if model_id:
             model_path = self.find_model_path(model_id, revision=None)
             if model_path and model_path.exists():
@@ -405,25 +403,27 @@ class ModelCacheManager:
         elif older_than_days:
             # 清除旧模型
             cutoff_date = datetime.now().timestamp() - (older_than_days * 86400)
-            
+
             for org_dir in self.models_dir.iterdir():
                 if not org_dir.is_dir():
                     continue
-                
+
                 for model_dir in org_dir.iterdir():
                     if not model_dir.is_dir():
                         continue
-                    
+
                     for revision_dir in model_dir.iterdir():
                         if not revision_dir.is_dir():
                             continue
-                        
+
                         metadata = self.load_metadata(revision_dir)
                         if metadata:
                             downloaded_at = metadata.get("downloaded_at")
                             if downloaded_at:
                                 try:
-                                    download_time = datetime.fromisoformat(downloaded_at).timestamp()
+                                    download_time = datetime.fromisoformat(
+                                        downloaded_at
+                                    ).timestamp()
                                     if download_time < cutoff_date:
                                         shutil.rmtree(revision_dir)
                                         logger.info("清除旧模型：{}", revision_dir)
@@ -437,42 +437,42 @@ class ModelCacheManager:
                 self.models_dir.mkdir(parents=True, exist_ok=True)
                 logger.info("已清除所有模型缓存")
                 cleaned_count = -1  # -1 表示全部清除
-        
+
         return cleaned_count
-    
+
     def print_stats(self) -> None:
         """打印缓存统计信息。"""
         stats = self.get_cache_stats()
-        
+
         logger.info("=" * 60)
         logger.info("缓存统计")
         logger.info("=" * 60)
-        logger.info("总模型数：{}", stats['total_models'])
-        logger.info("总大小：{}", self._format_size(stats['total_size']))
+        logger.info("总模型数：{}", stats["total_models"])
+        logger.info("总大小：{}", self._format_size(stats["total_size"]))
         logger.info("按组织统计:")
-        for org, count in stats['models_by_org'].items():
+        for org, count in stats["models_by_org"].items():
             logger.info("  {}: {} 个模型", org, count)
-        
-        if stats['oldest_model']:
-            logger.info("最早下载：{}", stats['oldest_model'][0])
-            logger.info("  时间：{}", stats['oldest_model'][1])
-        
-        if stats['newest_model']:
-            logger.info("最近下载：{}", stats['newest_model'][0])
-            logger.info("  时间：{}", stats['newest_model'][1])
-        
+
+        if stats["oldest_model"]:
+            logger.info("最早下载：{}", stats["oldest_model"][0])
+            logger.info("  时间：{}", stats["oldest_model"][1])
+
+        if stats["newest_model"]:
+            logger.info("最近下载：{}", stats["newest_model"][0])
+            logger.info("  时间：{}", stats["newest_model"][1])
+
         logger.info("=" * 60)
-    
+
     def _format_size(self, size_bytes: int) -> str:
         """格式化文件大小。
-        
+
         Args:
             size_bytes: 字节数
-            
+
         Returns:
             str: 格式化后的大小
         """
-        for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
+        for unit in ["B", "KB", "MB", "GB", "TB"]:
             if size_bytes < 1024.0:
                 return f"{size_bytes:.2f} {unit}"
             size_bytes /= 1024.0
@@ -485,16 +485,18 @@ _global_cache_manager: ModelCacheManager | None = None
 
 def get_cache_manager(cache_dir: str | Path | None = None) -> ModelCacheManager:
     """获取缓存管理器（单例模式）。
-    
+
     Args:
         cache_dir: 自定义缓存目录
-        
+
     Returns:
         ModelCacheManager: 缓存管理器实例
     """
     global _global_cache_manager
-    
-    if _global_cache_manager is None or (cache_dir and _global_cache_manager.cache_root != Path(cache_dir)):
+
+    if _global_cache_manager is None or (
+        cache_dir and _global_cache_manager.cache_root != Path(cache_dir)
+    ):
         _global_cache_manager = ModelCacheManager(cache_dir)
-    
+
     return _global_cache_manager

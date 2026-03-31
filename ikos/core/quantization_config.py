@@ -2,7 +2,6 @@
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional
 
 from loguru import logger
 
@@ -187,7 +186,7 @@ class QuantizationRecommendation:
         # 根据可用显存推荐
         return self._recommend_by_memory(fp32_memory)
 
-    def _extract_model_size(self, model_name: str) -> Optional[str]:
+    def _extract_model_size(self, model_name: str) -> str | None:
         """从模型名称提取参数量.
 
         Args:
@@ -221,8 +220,8 @@ class QuantizationRecommendation:
         """
         configs = QuantizationConfig.get_all_configs()
 
-        # 按显存占用排序（从小到大）
-        sorted_configs = sorted(configs, key=lambda c: c.memory_ratio)
+        # 按显存占用降序排列，优先选最高质量（最大显存占用）中仍能装入的配置
+        sorted_configs = sorted(configs, key=lambda c: c.memory_ratio, reverse=True)
 
         for config in sorted_configs:
             required_memory = fp32_memory * config.memory_ratio
@@ -330,7 +329,7 @@ class QuantizationLoader:
         if config.level in [QuantizationLevel.NF4, QuantizationLevel.INT4]:
             # 4bit 量化加载
             try:
-                import bitsandbytes as bnb
+                import bitsandbytes as bnb  # noqa: F401
 
                 base_config["load_in_4bit"] = True
                 base_config["bnb_4bit_compute_dtype"] = torch.float16
@@ -350,7 +349,7 @@ class QuantizationLoader:
         elif config.level == QuantizationLevel.INT8:
             # 8bit 量化加载
             try:
-                import bitsandbytes as bnb
+                import bitsandbytes as bnb  # noqa: F401
 
                 base_config["load_in_8bit"] = True
                 logger.info("配置 8bit 量化加载")
@@ -375,7 +374,7 @@ class QuantizationLoader:
 
 def auto_recommend_quantization(
     model_name: str,
-    hardware_info: Optional[HardwareInfo] = None,
+    hardware_info: HardwareInfo | None = None,
 ) -> QuantizationConfig:
     """自动推荐量化等级（全局函数）.
 

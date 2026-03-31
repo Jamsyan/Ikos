@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Optional, Union
+from typing import Any
 
 from loguru import logger
 
@@ -11,7 +11,6 @@ from .model_provider import ModelProvider
 from .native_inference_engine import NativeInferenceEngine
 from .ollama_provider import OllamaProvider
 from .openai_provider import OpenAICompatibleProvider
-from .quantization_config import QuantizationConfig
 
 
 class EngineType(Enum):
@@ -31,7 +30,7 @@ class EngineConfig:
     engine_type: EngineType
 
     # 引擎实例
-    engine: Optional[ModelProvider] = None
+    engine: ModelProvider | None = None
 
     # 配置参数
     config: dict[str, Any] = None
@@ -57,8 +56,8 @@ class EngineSwitcher:
         Args:
             auto_detect: 是否自动检测硬件
         """
-        self._hardware_info: Optional[HardwareInfo] = None
-        self._current_engine: Optional[EngineConfig] = None
+        self._hardware_info: HardwareInfo | None = None
+        self._current_engine: EngineConfig | None = None
         self._engines: dict[EngineType, EngineConfig] = {}
 
         # 硬件检测
@@ -99,8 +98,8 @@ class EngineSwitcher:
 
     def select_engine(
         self,
-        engine_type: Optional[EngineType] = None,
-        mode: Optional[EngineMode] = None,
+        engine_type: EngineType | None = None,
+        mode: EngineMode | None = None,
         manual_override: bool = False,
     ) -> EngineConfig:
         """选择引擎.
@@ -230,7 +229,7 @@ class EngineSwitcher:
             cache_dir=cache_dir,
         )
 
-    def get_current_engine(self) -> Optional[ModelProvider]:
+    def get_current_engine(self) -> ModelProvider | None:
         """获取当前引擎.
 
         Returns:
@@ -275,7 +274,9 @@ class EngineSwitcher:
         """
         info = {
             "hardware_info": self._hardware_info.to_dict() if self._hardware_info else None,
-            "current_engine": self._current_engine.engine_type.value if self._current_engine else None,
+            "current_engine": self._current_engine.engine_type.value
+            if self._current_engine
+            else None,
             "available_engines": [e.value for e in self._engines.keys()],
         }
 
@@ -328,7 +329,7 @@ class EngineSelectorConfig:
     openai_api_key: str = "ollama"
 
 
-def create_engine_selector(config: Optional[EngineSelectorConfig] = None) -> EngineSwitcher:
+def create_engine_selector(config: EngineSelectorConfig | None = None) -> EngineSwitcher:
     """创建引擎选择器.
 
     Args:
@@ -363,7 +364,7 @@ def create_engine_selector(config: Optional[EngineSelectorConfig] = None) -> Eng
 
 
 def get_engine(
-    preferred_engine: Optional[str] = None,
+    preferred_engine: str | None = None,
     quantization: str = "auto",
 ) -> tuple[ModelProvider, EngineType]:
     """获取引擎（便捷函数）.
@@ -389,16 +390,18 @@ def get_engine(
     else:
         engine_type = None
 
-    # 选择引擎
+    # 选择引擎（确定类型）
     engine_config = switcher.select_engine(
         engine_type=engine_type,
         manual_override=(preferred_engine is not None),
     )
+    resolved_type = engine_config.engine_type
 
-    # 更新原生引擎配置
-    if engine_type == EngineType.NATIVE:
+    # 更新原生引擎量化配置
+    if resolved_type == EngineType.NATIVE:
         engine_config.config["quantization"] = quantization
 
-    engine = switcher.get_current_engine()
+    # 实际创建引擎实例
+    engine = switcher.switch_to(resolved_type)
 
-    return engine, engine_config.engine_type
+    return engine, resolved_type

@@ -2,8 +2,7 @@
 
 from loguru import logger
 from PyQt6.QtCore import QTimer
-from PyQt6.QtWidgets import (QGroupBox, QHBoxLayout, QLabel, QProgressBar,
-                             QVBoxLayout, QWidget)
+from PyQt6.QtWidgets import QGroupBox, QHBoxLayout, QLabel, QProgressBar, QVBoxLayout
 
 
 class HardwareMonitorPanel(QGroupBox):

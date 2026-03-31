@@ -30,7 +30,7 @@ class UIConfigManager:
         """加载配置."""
         if self.config_file.exists():
             try:
-                with open(self.config_file, "r", encoding="utf-8") as f:
+                with open(self.config_file, encoding="utf-8") as f:
                     self._config = json.load(f)
                 logger.info(f"UI 配置已加载：{self.config_file}")
             except Exception as e:

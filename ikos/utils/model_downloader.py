@@ -38,21 +38,23 @@ class ModelDownloadError(RuntimeError):
 
         lowered = self.reason.lower()
         if "10060" in lowered or "connecttimeout" in lowered or "timed out" in lowered:
-            lines.append("建议: 当前更像是网络或代理问题，请检查目标源连通性，必要时切换镜像或代理。")
+            lines.append(
+                "建议: 当前更像是网络或代理问题，请检查目标源连通性，必要时切换镜像或代理。"
+            )
 
         return "\n".join(lines)
 
 
 class ModelDownloader:
     """模型下载器。
-    
+
     专注魔塔社区模型下载，集成缓存管理：
     - 自动清理无用文件（README/LICENSE 等）
     - 版本管理
     - 完整性验证
     - 空间统计
     """
-    
+
     def __init__(
         self,
         cache_dir: str | Path | None = None,
@@ -60,7 +62,7 @@ class ModelDownloader:
         allow_fallback: bool = False,
     ):
         """初始化模型下载器。
-        
+
         Args:
             cache_dir: 模型缓存目录
             preferred_source: 首选模型源
@@ -75,17 +77,17 @@ class ModelDownloader:
         logger.info("缓存目录：{}", self.cache_dir)
         logger.info("首选模型源：{}", preferred_source)
         logger.info("失败后自动回退：{}", "开启" if allow_fallback else "关闭")
-    
+
     def download(
         self,
         model_id: str,
         revision: str = "master",
         allow_patterns: list[str] | None = None,
         ignore_patterns: list[str] | None = None,
-        resume_download: bool = True
+        resume_download: bool = True,
     ) -> Path:
         """下载模型。
-        
+
         Args:
             model_id: 模型 ID
                 - 魔塔社区格式：damo/nlp_csanmt_translationzh2en
@@ -94,12 +96,12 @@ class ModelDownloader:
             allow_patterns: 允许下载的文件模式
             ignore_patterns: 忽略的文件模式
             resume_download: 是否支持断点续传
-            
+
         Returns:
             Path: 模型本地路径
         """
         source = self.source_selector.detect()
-        
+
         logger.info("开始下载模型：{}", model_id)
         logger.info("使用模型源：{}", source)
 
@@ -113,10 +115,19 @@ class ModelDownloader:
             try:
                 resolved_revision = self._resolve_revision(current_source, revision)
                 if resolved_revision != revision:
-                    logger.info("已按 {} 规则调整版本：{} -> {}", current_source, revision, resolved_revision)
+                    logger.info(
+                        "已按 {} 规则调整版本：{} -> {}",
+                        current_source,
+                        revision,
+                        resolved_revision,
+                    )
                 if current_source == "modelscope":
                     return self._download_from_modelscope(
-                        model_id, resolved_revision, allow_patterns, ignore_patterns, resume_download
+                        model_id,
+                        resolved_revision,
+                        allow_patterns,
+                        ignore_patterns,
+                        resume_download,
                     )
 
                 return self._download_from_huggingface(
@@ -137,24 +148,24 @@ class ModelDownloader:
         if source == "huggingface" and revision == "master":
             return "main"
         return revision
-    
+
     def _download_from_modelscope(
         self,
         model_id: str,
         revision: str,
         allow_patterns: list[str] | None,
         ignore_patterns: list[str] | None,
-        resume_download: bool
+        resume_download: bool,
     ) -> Path:
         """从魔塔社区下载模型。
-        
+
         Args:
             model_id: 模型 ID
             revision: 版本
             allow_patterns: 允许的文件模式
             ignore_patterns: 忽略的文件模式
             resume_download: 断点续传
-            
+
         Returns:
             Path: 模型本地路径
         """
@@ -172,12 +183,12 @@ class ModelDownloader:
                 "revision": revision,
                 "cache_dir": str(source_dir),
             }
-            
+
             if allow_patterns:
                 download_kwargs["allow_patterns"] = allow_patterns
             if ignore_patterns:
                 download_kwargs["ignore_patterns"] = ignore_patterns
-            
+
             # 执行下载
             downloaded_path = snapshot_download(**download_kwargs)
             downloaded_path = Path(downloaded_path)
@@ -196,7 +207,9 @@ class ModelDownloader:
             if integrity["valid"]:
                 logger.info("模型完整性验证通过")
                 logger.info("  文件数：{}", integrity["files_count"])
-                logger.info("  总大小：{}", self.cache_manager._format_size(integrity["total_size"]))
+                logger.info(
+                    "  总大小：{}", self.cache_manager._format_size(integrity["total_size"])
+                )
                 logger.info("  核心文件：{} 个", len(integrity["essential_files"]))
             else:
                 logger.warning("模型完整性验证失败")
@@ -212,8 +225,8 @@ class ModelDownloader:
                 download_info={
                     "source": "modelscope",
                     "cleaned_files": cleaned_count,
-                    "integrity": integrity
-                }
+                    "integrity": integrity,
+                },
             )
 
             return downloaded_path
@@ -229,25 +242,25 @@ class ModelDownloader:
                 revision=revision,
                 cache_dir=self.cache_manager.get_source_dir("modelscope"),
                 reason=str(e),
-            )
-    
+            ) from e
+
     def _download_from_huggingface(
         self,
         model_id: str,
         revision: str,
         allow_patterns: list[str] | None,
         ignore_patterns: list[str] | None,
-        resume_download: bool
+        resume_download: bool,
     ) -> Path:
         """从 Hugging Face 下载模型。
-        
+
         Args:
             model_id: 模型 ID
             revision: 版本
             allow_patterns: 允许的文件模式
             ignore_patterns: 忽略的文件模式
             resume_download: 断点续传
-            
+
         Returns:
             Path: 模型本地路径
         """
@@ -266,12 +279,12 @@ class ModelDownloader:
                 "cache_dir": str(source_dir),
                 "resume_download": resume_download,
             }
-            
+
             if allow_patterns:
                 download_kwargs["allow_patterns"] = allow_patterns
             if ignore_patterns:
                 download_kwargs["ignore_patterns"] = ignore_patterns
-            
+
             # 执行下载
             model_dir = snapshot_download(**download_kwargs)
             downloaded_path = Path(model_dir)
@@ -302,15 +315,15 @@ class ModelDownloader:
                 revision=revision,
                 cache_dir=self.cache_manager.get_source_dir("huggingface"),
                 reason=str(e),
-            )
-    
+            ) from e
+
     def get_model_path(self, model_id: str, revision: str = "master") -> Path | None:
         """获取模型本地路径（如果已缓存）。
-        
+
         Args:
             model_id: 模型 ID
             revision: 版本
-            
+
         Returns:
             Path | None: 模型路径，不存在则返回 None
         """
@@ -318,10 +331,10 @@ class ModelDownloader:
         if cache_path:
             logger.info("模型已缓存：{}", cache_path)
         return cache_path
-    
+
     def clear_cache(self, model_id: str | None = None) -> None:
         """清除模型缓存。
-        
+
         Args:
             model_id: 模型 ID（None 表示清除所有）
         """
@@ -329,11 +342,13 @@ class ModelDownloader:
             cache_path = self.cache_manager.find_model_path(model_id, revision=None)
             if cache_path and cache_path.exists():
                 import shutil
+
                 shutil.rmtree(cache_path)
                 logger.info("已清除模型缓存：{}", model_id)
         else:
             # 清除所有缓存
             import shutil
+
             if self.cache_dir.exists():
                 shutil.rmtree(self.cache_dir)
                 self.cache_dir.mkdir(parents=True, exist_ok=True)
@@ -344,16 +359,16 @@ def download_model(
     model_id: str,
     cache_dir: str | Path | None = None,
     preferred_source: ModelSourceType = "auto",
-    **kwargs: Any
+    **kwargs: Any,
 ) -> Path:
     """便捷函数：下载模型。
-    
+
     Args:
         model_id: 模型 ID
         cache_dir: 缓存目录
         preferred_source: 首选模型源
         **kwargs: 其他参数传递给 ModelDownloader.download
-        
+
     Returns:
         Path: 模型本地路径
     """

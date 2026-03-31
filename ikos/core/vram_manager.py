@@ -2,7 +2,6 @@
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Optional
 
 from loguru import logger
 
@@ -248,7 +247,9 @@ class MemoryMonitor:
 
         if total > 0:
             usage_percent = (used / total) * 100
-            logger.info(f"显存使用：{used:.2f}GB / {total:.2f}GB ({usage_percent:.1f}%), 空闲 {free:.2f}GB")
+            logger.info(
+                f"显存使用：{used:.2f}GB / {total:.2f}GB ({usage_percent:.1f}%), 空闲 {free:.2f}GB"
+            )
         else:
             logger.info("显存使用情况 unavailable（pynvml 不可用）")
 
@@ -298,7 +299,7 @@ class VRAMConfig:
 class VRAMManager:
     """显存管理器（统一接口）."""
 
-    def __init__(self, config: Optional[VRAMConfig] = None):
+    def __init__(self, config: VRAMConfig | None = None):
         """初始化显存管理器.
 
         Args:

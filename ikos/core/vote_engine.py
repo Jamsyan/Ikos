@@ -111,9 +111,7 @@ class VoteEngine:
 
         return {
             "winner": best_result.model if hasattr(best_result, "model") else "unknown",
-            "content": best_result.content
-            if hasattr(best_result, "content")
-            else str(best_result),
+            "content": best_result.content if hasattr(best_result, "content") else str(best_result),
             "confidence": best_weight,
             "all_results": results,
         }
@@ -132,9 +130,7 @@ class VoteEngine:
 
         # 简化实现：比较内容相似度
         # 实际应该使用更复杂的相似度算法
-        contents = [
-            r.content if hasattr(r, "content") else str(r) for r in results
-        ]
+        contents = [r.content if hasattr(r, "content") else str(r) for r in results]
 
         # 计算有多少对是相同的
         same_pairs = 0

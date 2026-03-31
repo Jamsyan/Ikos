@@ -2,10 +2,14 @@
 
 import pytest
 
-from ikos.core.hardware_detector import (EngineMode, HardwareDetector,
-                                         HardwareInfo, HardwareTier,
-                                         check_minimum_requirements,
-                                         detect_hardware)
+from ikos.core.hardware_detector import (
+    EngineMode,
+    HardwareDetector,
+    HardwareInfo,
+    HardwareTier,
+    check_minimum_requirements,
+    detect_hardware,
+)
 
 
 class TestHardwareInfo:
@@ -14,7 +18,7 @@ class TestHardwareInfo:
     def test_default_initialization(self):
         """测试默认初始化."""
         info = HardwareInfo()
-        
+
         assert info.gpu_model is None
         assert info.gpu_memory_gb == 0.0
         assert info.cpu_cores == 0
@@ -54,9 +58,9 @@ class TestHardwareInfo:
             cpu_cores=8,
             system_memory_gb=16.0,
         )
-        
+
         info_dict = info.to_dict()
-        
+
         assert info_dict["gpu_model"] == "NVIDIA RTX 3060"
         assert info_dict["gpu_memory_gb"] == 12.0
         assert info_dict["tier"] in ["极限场景", "基础场景", "性能场景", "旗舰场景"]
@@ -69,9 +73,9 @@ class TestHardwareInfo:
             cpu_cores=8,
             system_memory_gb=16.0,
         )
-        
+
         info_str = str(info)
-        
+
         assert "NVIDIA RTX 3060" in info_str
         assert "12.0" in info_str
         assert "硬件检测报告" in info_str
@@ -83,7 +87,7 @@ class TestHardwareDetector:
     def test_detector_initialization(self):
         """测试检测器初始化."""
         detector = HardwareDetector()
-        
+
         # 不依赖外部库的情况下应该能正常初始化
         assert detector is not None
 
@@ -91,7 +95,7 @@ class TestHardwareDetector:
         """测试检测功能."""
         detector = HardwareDetector()
         info = detector.detect()
-        
+
         assert isinstance(info, HardwareInfo)
         assert info.tier in HardwareTier
         assert info.recommended_mode in EngineMode
@@ -99,13 +103,13 @@ class TestHardwareDetector:
     def test_global_detect_function(self):
         """测试全局检测函数."""
         info = detect_hardware()
-        
+
         assert isinstance(info, HardwareInfo)
 
     def test_check_minimum_requirements(self):
         """测试最低要求检查."""
         meets, message = check_minimum_requirements()
-        
+
         assert isinstance(meets, bool)
         assert isinstance(message, str)
         assert len(message) > 0

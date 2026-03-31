@@ -1,16 +1,15 @@
 """原生推理引擎核心 - 基于 Transformers + PyTorch 的推理引擎."""
 
 import time
-from typing import Any, Optional
+from typing import Any
 
 from loguru import logger
 
 from .hardware_detector import HardwareInfo, detect_hardware
 from .model_provider import ModelProvider, ModelResponse, VoteResult
 from .native_model_loader import NativeModelLoader
-from .quantization_config import (QuantizationConfig,
-                                  auto_recommend_quantization)
-from .vram_manager import Priority, VRAMManager
+from .quantization_config import QuantizationConfig, auto_recommend_quantization
+from .vram_manager import VRAMManager
 
 
 class NativeInferenceEngine(ModelProvider):
@@ -27,10 +26,10 @@ class NativeInferenceEngine(ModelProvider):
 
     def __init__(
         self,
-        hardware_info: Optional[HardwareInfo] = None,
-        vram_manager: Optional[VRAMManager] = None,
-        quant_config: Optional[QuantizationConfig] = None,
-        cache_dir: Optional[str] = None,
+        hardware_info: HardwareInfo | None = None,
+        vram_manager: VRAMManager | None = None,
+        quant_config: QuantizationConfig | None = None,
+        cache_dir: str | None = None,
     ):
         """初始化原生推理引擎.
 
@@ -66,7 +65,9 @@ class NativeInferenceEngine(ModelProvider):
         self._loaded_models: dict[str, tuple[Any, Any]] = {}
 
         logger.info("原生推理引擎已初始化")
-        logger.info(f"硬件：{hardware_info.gpu_model or 'CPU'} ({hardware_info.gpu_memory_gb:.1f}GB)")
+        logger.info(
+            f"硬件：{hardware_info.gpu_model or 'CPU'} ({hardware_info.gpu_memory_gb:.1f}GB)"
+        )
         logger.info(f"量化：{quant_config.level.value if quant_config else '自动'}")
 
     def call(
@@ -138,7 +139,7 @@ class NativeInferenceEngine(ModelProvider):
             outputs = model_obj.generate(**inputs, **gen_config)
 
         # 解码输出
-        generated_ids = outputs[0][inputs["input_ids"].shape[1]:]
+        generated_ids = outputs[0][inputs["input_ids"].shape[1] :]
         response = tokenizer.decode(generated_ids, skip_special_tokens=True)
 
         # 计算用时
@@ -148,7 +149,9 @@ class NativeInferenceEngine(ModelProvider):
         input_tokens = inputs["input_ids"].shape[1]
         output_tokens = len(generated_ids)
 
-        logger.info(f"推理完成：{output_tokens} tokens, {elapsed:.2f}s, {output_tokens / elapsed:.1f} tokens/s")
+        logger.info(
+            f"推理完成：{output_tokens} tokens, {elapsed:.2f}s, {output_tokens / elapsed:.1f} tokens/s"
+        )
 
         return ModelResponse(
             content=response,
@@ -186,8 +189,7 @@ class NativeInferenceEngine(ModelProvider):
 
         with ThreadPoolExecutor(max_workers=len(models)) as executor:
             futures = {
-                executor.submit(self.call, prompt, model, **kwargs): model
-                for model in models
+                executor.submit(self.call, prompt, model, **kwargs): model for model in models
             }
 
             for future in as_completed(futures):
@@ -300,7 +302,7 @@ class NativeInferenceEngine(ModelProvider):
         """
         return list(self._loaded_models.keys())
 
-    def get_model_info(self, model_name: str) -> Optional[dict]:
+    def get_model_info(self, model_name: str) -> dict | None:
         """获取模型信息.
 
         Args:
@@ -355,10 +357,10 @@ class NativeEngineBuilder:
 
     def __init__(self):
         """初始化构建器."""
-        self._hardware_info: Optional[HardwareInfo] = None
-        self._vram_manager: Optional[VRAMManager] = None
-        self._quant_config: Optional[QuantizationConfig] = None
-        self._cache_dir: Optional[str] = None
+        self._hardware_info: HardwareInfo | None = None
+        self._vram_manager: VRAMManager | None = None
+        self._quant_config: QuantizationConfig | None = None
+        self._cache_dir: str | None = None
 
     def with_hardware(self, hardware_info: HardwareInfo) -> "NativeEngineBuilder":
         """设置硬件信息.
@@ -426,7 +428,7 @@ class NativeEngineBuilder:
 
 def create_native_engine(
     quantization: str = "auto",
-    cache_dir: Optional[str] = None,
+    cache_dir: str | None = None,
 ) -> NativeInferenceEngine:
     """创建原生推理引擎（便捷函数）.
 
@@ -438,7 +440,6 @@ def create_native_engine(
         NativeInferenceEngine: 原生推理引擎
     """
     from .hardware_detector import detect_hardware
-    from .quantization_config import auto_recommend_quantization
 
     # 硬件检测
     hardware_info = detect_hardware()

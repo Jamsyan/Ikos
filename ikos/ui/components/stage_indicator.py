@@ -1,8 +1,15 @@
 """阶段指示器 - 可视化展示四阶段执行状态，支持阶段状态显示."""
 
 from PyQt6.QtCore import Qt
-from PyQt6.QtWidgets import (QGridLayout, QHBoxLayout, QLabel, QProgressBar,
-                             QSizePolicy, QVBoxLayout, QWidget)
+from PyQt6.QtWidgets import (
+    QGridLayout,
+    QHBoxLayout,
+    QLabel,
+    QProgressBar,
+    QSizePolicy,
+    QVBoxLayout,
+    QWidget,
+)
 
 
 class StageIndicator(QWidget):
@@ -359,9 +366,9 @@ class StageIndicator(QWidget):
         """
         if not hasattr(self, "_stage_widgets"):
             return
-        
+
         self._completed_stages.add(stage_index)
-        
+
         # 更新该阶段为完成状态
         self._num_labels[stage_index].setStyleSheet(self._get_num_style("completed"))
         self._name_labels[stage_index].setStyleSheet(self._get_name_style("completed"))
@@ -370,7 +377,9 @@ class StageIndicator(QWidget):
         self._progress_bars[stage_index].setValue(100)
         self._progress_bars[stage_index].setStyleSheet(self._get_progress_style("completed"))
         self._progress_labels[stage_index].setText("阶段完成")
-        self._progress_labels[stage_index].setStyleSheet(self._get_progress_label_style("completed"))
+        self._progress_labels[stage_index].setStyleSheet(
+            self._get_progress_label_style("completed")
+        )
 
     def set_stage_failed(self, stage_index: int) -> None:
         """设置阶段为失败状态.
@@ -380,7 +389,7 @@ class StageIndicator(QWidget):
         """
         if not hasattr(self, "_stage_widgets"):
             return
-        
+
         # 更新该阶段为失败状态
         self._num_labels[stage_index].setStyleSheet(self._get_num_style("failed"))
         self._name_labels[stage_index].setStyleSheet(self._get_name_style("failed"))
@@ -395,10 +404,10 @@ class StageIndicator(QWidget):
         """重置所有阶段."""
         self._current_stage = -1
         self._completed_stages = set()
-        
+
         if not hasattr(self, "_stage_widgets"):
             return
-        
+
         for i, widget in enumerate(self._stage_widgets):
             # 全部重置为 pending 状态
             self._num_labels[i].setStyleSheet(self._get_num_style("pending"))
@@ -418,10 +427,10 @@ class StageIndicator(QWidget):
             # 将当前阶段标记为完成
             if self._current_stage < len(self._stage_widgets):
                 self.set_stage_completed(self._current_stage)
-            
+
             # 进入下一阶段
             self._current_stage = min(self._current_stage + 1, len(self._stage_widgets) - 1)
-        
+
         self.set_active_stage(self._current_stage)
 
     def get_current_stage(self) -> int:
@@ -440,7 +449,9 @@ class StageIndicator(QWidget):
         """
         return self._completed_stages.copy()
 
-    def set_stage_progress(self, stage_index: int, progress: int, detail: str | None = None) -> None:
+    def set_stage_progress(
+        self, stage_index: int, progress: int, detail: str | None = None
+    ) -> None:
         """设置阶段内进度。"""
         if not hasattr(self, "_stage_widgets"):
             return

@@ -6,17 +6,31 @@ from html import escape
 from loguru import logger
 from PyQt6.QtCore import QSignalBlocker, Qt, QThread, pyqtSignal
 from PyQt6.QtGui import QFont
-from PyQt6.QtWidgets import (QApplication, QCheckBox, QComboBox, QFileDialog,
-                             QFrame, QGroupBox, QHBoxLayout, QLabel, QLineEdit,
-                             QMainWindow, QMessageBox, QProgressBar,
-                             QPushButton, QScrollArea, QSizePolicy, QSplitter, QTextEdit,
-                             QVBoxLayout, QWidget)
+from PyQt6.QtWidgets import (
+    QApplication,
+    QCheckBox,
+    QComboBox,
+    QFileDialog,
+    QFrame,
+    QGroupBox,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QMainWindow,
+    QMessageBox,
+    QProgressBar,
+    QPushButton,
+    QScrollArea,
+    QSizePolicy,
+    QSplitter,
+    QTextEdit,
+    QVBoxLayout,
+    QWidget,
+)
 
-from ikos.core import (EngineType, NativeModelLoader, create_native_engine,
-                       detect_hardware)
+from ikos.core import detect_hardware
 from ikos.core.pipeline import IkosPipeline
-from ikos.ui.components import (HardwareMonitorPanel, ModelManagerPanel,
-                                StageIndicator)
+from ikos.ui.components import HardwareMonitorPanel, ModelManagerPanel, StageIndicator
 from ikos.ui.config_manager import UIConfigManager
 
 
@@ -115,7 +129,7 @@ class MainWindow(QMainWindow):
         self.pipeline = None
         self.worker = None
         self.hardware_info = None
-        
+
         self._init_hardware()
         self._init_ui()
         self._load_config()
@@ -241,7 +255,7 @@ class MainWindow(QMainWindow):
             color: #1890ff;
             letter-spacing: 1px;
         """)
-        
+
         subtitle = QLabel("Intelligent Knowledge Building System · 智能知识构建系统")
         subtitle.setStyleSheet("font-size: 11px; color: #999999;")
 
@@ -327,13 +341,10 @@ class MainWindow(QMainWindow):
         model_label = QLabel("主力模型")
         model_label.setStyleSheet("color: #666666; font-size: 11px;")
         model_layout.addWidget(model_label)
-        
-        self.model_combo = self._create_combo([
-            "Qwen 3.5 7B",
-            "Qwen 3.5 14B",
-            "DeepSeek-R1 7B",
-            "Llama 3.1 8B"
-        ])
+
+        self.model_combo = self._create_combo(
+            ["Qwen 3.5 7B", "Qwen 3.5 14B", "DeepSeek-R1 7B", "Llama 3.1 8B"]
+        )
         self.model_combo.setMinimumWidth(180)
         self.model_combo.currentTextChanged.connect(self._on_model_changed)
         model_layout.addWidget(self.model_combo)
@@ -344,13 +355,8 @@ class MainWindow(QMainWindow):
         engine_label = QLabel("引擎模式")
         engine_label.setStyleSheet("color: #666666; font-size: 11px;")
         engine_layout.addWidget(engine_label)
-        
-        self.engine_combo = self._create_combo([
-            "自动",
-            "外部引擎",
-            "原生引擎",
-            "混合模式"
-        ])
+
+        self.engine_combo = self._create_combo(["自动", "外部引擎", "原生引擎", "混合模式"])
         self.engine_combo.setMinimumWidth(120)
         self.engine_combo.currentTextChanged.connect(self._on_engine_changed)
         engine_layout.addWidget(self.engine_combo)
@@ -361,7 +367,7 @@ class MainWindow(QMainWindow):
         quantize_label = QLabel("量化等级")
         quantize_label.setStyleSheet("color: #666666; font-size: 11px;")
         quantize_layout.addWidget(quantize_label)
-        
+
         self.quantize_combo = self._create_combo(["INT4", "INT8", "FP16", "FP32"])
         self.quantize_combo.setMinimumWidth(100)
         self.quantize_combo.currentTextChanged.connect(self._on_quantize_changed)
@@ -385,7 +391,7 @@ class MainWindow(QMainWindow):
         format_label.setStyleSheet("color: #666666; font-size: 11px;")
         format_layout = QVBoxLayout()
         format_layout.addWidget(format_label)
-        
+
         format_checkbox_layout = QHBoxLayout()
         format_checkbox_layout.setSpacing(12)
         self.md_check = self._create_check("Markdown", True)
@@ -403,7 +409,7 @@ class MainWindow(QMainWindow):
         output_dir_label = QLabel("输出目录")
         output_dir_label.setStyleSheet("color: #666666; font-size: 11px;")
         output_dir_layout.addWidget(output_dir_label)
-        
+
         output_dir_input_layout = QHBoxLayout()
         output_dir_input_layout.setSpacing(5)
         self.output_dir = QLineEdit("./data/output")
@@ -422,7 +428,7 @@ class MainWindow(QMainWindow):
             }
         """)
         output_dir_input_layout.addWidget(self.output_dir)
-        
+
         browse_btn = QPushButton("浏览")
         browse_btn.setFixedHeight(32)
         browse_btn.setStyleSheet("""
@@ -449,11 +455,10 @@ class MainWindow(QMainWindow):
 
     def _create_left_panel(self) -> QWidget:
         """左侧面板 - 任务输入 + 紧凑组件."""
-        from PyQt6.QtWidgets import QScrollArea
 
         panel = QWidget()
         panel.setStyleSheet("background-color: #ffffff;")
-        
+
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setWidget(panel)
@@ -497,7 +502,9 @@ class MainWindow(QMainWindow):
         task_layout.addWidget(task_hint)
 
         self.task_input = QTextEdit()
-        self.task_input.setPlaceholderText("请详细描述您需要构建的知识领域，包括：\n- 核心主题\n- 关键概念\n- 期望的知识结构\n- 特殊要求...")
+        self.task_input.setPlaceholderText(
+            "请详细描述您需要构建的知识领域，包括：\n- 核心主题\n- 关键概念\n- 期望的知识结构\n- 特殊要求..."
+        )
         self.task_input.setMinimumHeight(180)
         self.task_input.setStyleSheet("""
             QTextEdit {
@@ -550,12 +557,14 @@ class MainWindow(QMainWindow):
         self.model_manager.download_log.connect(self._append_download_log)
         self.model_manager.download_status_changed.connect(self._on_download_status_changed)
         self.model_manager.download_source_changed.connect(self._on_download_source_changed)
-        self.model_manager.add_predefined_models([
-            "Qwen/Qwen2.5-7B-Instruct",
-            "Qwen/Qwen2.5-3B-Instruct",
-            "Qwen/Qwen2.5-14B-Instruct",
-            "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B",
-        ])
+        self.model_manager.add_predefined_models(
+            [
+                "Qwen/Qwen2.5-7B-Instruct",
+                "Qwen/Qwen2.5-3B-Instruct",
+                "Qwen/Qwen2.5-14B-Instruct",
+                "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B",
+            ]
+        )
         self.model_manager.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         layout.addWidget(self.model_manager)
 
@@ -613,16 +622,18 @@ class MainWindow(QMainWindow):
         """右侧面板 - 流程可视化 + 构建日志."""
         panel = QWidget()
         panel.setStyleSheet("background-color: #fafafa;")
-        
+
         layout = QVBoxLayout(panel)
         layout.setSpacing(0)
         layout.setContentsMargins(0, 0, 0, 0)
 
         # 构建流程可视化
         workflow_widget = QWidget()
-        workflow_widget.setStyleSheet("background-color: #ffffff; border-bottom: 1px solid #e0e0e0;")
+        workflow_widget.setStyleSheet(
+            "background-color: #ffffff; border-bottom: 1px solid #e0e0e0;"
+        )
         workflow_widget.setMinimumHeight(220)
-        
+
         workflow_layout = QVBoxLayout(workflow_widget)
         workflow_layout.setContentsMargins(20, 15, 20, 15)
         workflow_layout.setSpacing(10)
@@ -639,7 +650,7 @@ class MainWindow(QMainWindow):
         # 构建日志
         log_widget = QWidget()
         log_widget.setStyleSheet("background-color: #ffffff;")
-        
+
         log_layout = QVBoxLayout(log_widget)
         log_layout.setContentsMargins(20, 15, 20, 15)
         log_layout.setSpacing(10)
@@ -656,31 +667,31 @@ class MainWindow(QMainWindow):
         filter_label = QLabel("过滤:")
         filter_label.setStyleSheet("color: #666666; font-size: 11px;")
         filter_layout.addWidget(filter_label)
-        
+
         self.filter_info = QCheckBox("INFO")
         self.filter_info.setChecked(True)
         self.filter_info.setStyleSheet("font-size: 11px;")
         self.filter_info.stateChanged.connect(self._apply_log_filter)
         filter_layout.addWidget(self.filter_info)
-        
+
         self.filter_success = QCheckBox("SUCCESS")
         self.filter_success.setChecked(True)
         self.filter_success.setStyleSheet("font-size: 11px;")
         self.filter_success.stateChanged.connect(self._apply_log_filter)
         filter_layout.addWidget(self.filter_success)
-        
+
         self.filter_warning = QCheckBox("WARNING")
         self.filter_warning.setChecked(True)
         self.filter_warning.setStyleSheet("font-size: 11px;")
         self.filter_warning.stateChanged.connect(self._apply_log_filter)
         filter_layout.addWidget(self.filter_warning)
-        
+
         self.filter_error = QCheckBox("ERROR")
         self.filter_error.setChecked(True)
         self.filter_error.setStyleSheet("font-size: 11px;")
         self.filter_error.stateChanged.connect(self._apply_log_filter)
         filter_layout.addWidget(self.filter_error)
-        
+
         log_toolbar.addLayout(filter_layout)
 
         # 导出按钮
@@ -848,11 +859,7 @@ class MainWindow(QMainWindow):
 
     def _browse_output_dir(self) -> None:
         """浏览输出目录."""
-        dir_path = QFileDialog.getExistingDirectory(
-            self,
-            "选择输出目录",
-            self.output_dir.text()
-        )
+        dir_path = QFileDialog.getExistingDirectory(self, "选择输出目录", self.output_dir.text())
         if dir_path:
             self.output_dir.setText(dir_path)
 
@@ -883,12 +890,7 @@ class MainWindow(QMainWindow):
 
     def _save_config(self) -> None:
         """保存配置."""
-        self.config_manager.set_window_geometry(
-            self.x(),
-            self.y(),
-            self.width(),
-            self.height()
-        )
+        self.config_manager.set_window_geometry(self.x(), self.y(), self.width(), self.height())
         self.config_manager.set_model_selection(self.model_combo.currentText())
         self.config_manager.set_engine_mode(self.engine_combo.currentText())
         self.config_manager.set_quantization_level(self.quantize_combo.currentText())
@@ -900,22 +902,26 @@ class MainWindow(QMainWindow):
         if self.json_check.isChecked():
             formats.append("json")
 
-        self.config_manager.set_output_config({
-            "formats": formats,
-            "output_dir": self.output_dir.text(),
-            "knowledge_graph": self.graph_check.isChecked(),
-        })
+        self.config_manager.set_output_config(
+            {
+                "formats": formats,
+                "output_dir": self.output_dir.text(),
+                "knowledge_graph": self.graph_check.isChecked(),
+            }
+        )
 
         logger.info("UI 配置已保存")
 
     def eventFilter(self, obj, event):
         """事件过滤器."""
         from PyQt6.QtCore import QEvent
-        
+
         if obj == self.task_input and event.type() == QEvent.Type.KeyPress:
             key_event = event
-            if (key_event.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter) and
-                key_event.modifiers() == Qt.KeyboardModifier.ControlModifier):
+            if (
+                key_event.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter)
+                and key_event.modifiers() == Qt.KeyboardModifier.ControlModifier
+            ):
                 self.start_task()
                 return True
         return super().eventFilter(obj, event)
@@ -933,21 +939,25 @@ class MainWindow(QMainWindow):
         if hasattr(self, "task_input") and hasattr(self, "char_count_label"):
             text = self.task_input.toPlainText()
             char_count = len(text)
-            
+
             if char_count == 0:
                 self.char_count_label.setText("0 字符")
             elif char_count < 100:
                 self.char_count_label.setText(f"{char_count} 字符")
             elif char_count < 500:
-                self.char_count_label.setText(f"<span style='color: #faad14;'>{char_count} 字符</span>")
+                self.char_count_label.setText(
+                    f"<span style='color: #faad14;'>{char_count} 字符</span>"
+                )
             else:
-                self.char_count_label.setText(f"<span style='color: #ff4d4f;'>{char_count} 字符</span>")
+                self.char_count_label.setText(
+                    f"<span style='color: #ff4d4f;'>{char_count} 字符</span>"
+                )
 
     def _on_engine_changed(self, engine: str) -> None:
         """引擎模式变化."""
         logger.info(f"引擎模式：{engine}")
         self.config_manager.set_engine_mode(engine)
-        
+
         if hasattr(self, "hardware_monitor"):
             self.hardware_monitor.set_engine_mode(engine)
 
@@ -1029,15 +1039,29 @@ class MainWindow(QMainWindow):
                 return
 
         selected_model = self._get_runtime_model_name()
-        if selected_model and hasattr(self, "model_manager") and self.model_manager.has_cached_model(selected_model):
-            self._set_status("就绪", "#52c41a", f"当前模型已就绪：{selected_model}", priority=10, token="idle")
+        if (
+            selected_model
+            and hasattr(self, "model_manager")
+            and self.model_manager.has_cached_model(selected_model)
+        ):
+            self._set_status(
+                "就绪", "#52c41a", f"当前模型已就绪：{selected_model}", priority=10, token="idle"
+            )
             return
 
         if selected_model:
-            self._set_status("待下载模型", "#faad14", f"当前模型尚未缓存：{selected_model}", priority=10, token="idle")
+            self._set_status(
+                "待下载模型",
+                "#faad14",
+                f"当前模型尚未缓存：{selected_model}",
+                priority=10,
+                token="idle",
+            )
             return
 
-        self._set_status("待选择模型", "#8c8c8c", "请先选择并下载可用模型", priority=10, token="idle")
+        self._set_status(
+            "待选择模型", "#8c8c8c", "请先选择并下载可用模型", priority=10, token="idle"
+        )
 
     def _get_runtime_model_name(self) -> str:
         """获取当前实际参与下载的模型名。"""
@@ -1062,7 +1086,7 @@ class MainWindow(QMainWindow):
         self.log_output.clear()
         self.stage_indicator.reset()
         self._set_status("构建进行中", "#1890ff", "正在准备构建流程", priority=80, token="build")
-        
+
         self._log_entries = []
 
         task_preview = task[:50] + ("..." if len(task) > 50 else "")
@@ -1107,6 +1131,7 @@ class MainWindow(QMainWindow):
     def append_log(self, message: str, log_type: str = "info"):
         """添加日志."""
         from datetime import datetime
+
         timestamp = datetime.now().strftime("%H:%M:%S")
         log_type = log_type.lower()
         safe_message = escape(message.strip()).replace("\n", "<br>")
@@ -1122,14 +1147,16 @@ class MainWindow(QMainWindow):
         # 存储日志条目（包含类型信息用于过滤）
         if not hasattr(self, "_log_entries"):
             self._log_entries = []
-        
-        self._log_entries.append({
-            "timestamp": timestamp,
-            "message": safe_message,
-            "raw_message": message.strip(),
-            "type": log_type,
-            "color": color,
-        })
+
+        self._log_entries.append(
+            {
+                "timestamp": timestamp,
+                "message": safe_message,
+                "raw_message": message.strip(),
+                "type": log_type,
+                "color": color,
+            }
+        )
 
         # 应用过滤后显示
         self._apply_log_filter()
@@ -1138,20 +1165,20 @@ class MainWindow(QMainWindow):
         """应用日志过滤器."""
         if not hasattr(self, "_log_entries"):
             return
-        
+
         # 获取选中的过滤条件
         show_info = self.filter_info.isChecked()
         show_success = self.filter_success.isChecked()
         show_warning = self.filter_warning.isChecked()
         show_error = self.filter_error.isChecked()
-        
+
         # 清空当前显示
         self.log_output.clear()
-        
+
         # 根据过滤条件重新显示
         for entry in self._log_entries:
             log_type = entry["type"]
-            
+
             # 检查是否应该显示
             should_show = False
             if log_type == "info" and show_info:
@@ -1162,7 +1189,7 @@ class MainWindow(QMainWindow):
                 should_show = True
             elif log_type == "error" and show_error:
                 should_show = True
-            
+
             if should_show:
                 self.log_output.append(
                     f'<span style="color: #999999;">[{entry["timestamp"]}]</span> '
@@ -1172,29 +1199,24 @@ class MainWindow(QMainWindow):
     def _export_log(self):
         """导出日志到文件."""
         from PyQt6.QtWidgets import QFileDialog
-        
+
         if not hasattr(self, "_log_entries") or not self._log_entries:
             QMessageBox.information(self, "提示", "没有可导出的日志")
             return
-        
+
         file_path, _ = QFileDialog.getSaveFileName(
-            self,
-            "导出日志",
-            "ikos_log.txt",
-            "文本文件 (*.txt);;所有文件 (*.*)"
+            self, "导出日志", "ikos_log.txt", "文本文件 (*.txt);;所有文件 (*.*)"
         )
-        
+
         if file_path:
             try:
                 with open(file_path, "w", encoding="utf-8") as f:
                     for entry in self._log_entries:
-                        f.write(f"[{entry['timestamp']}] [{entry['type'].upper()}] {entry['raw_message']}\n")
-                
-                QMessageBox.information(
-                    self,
-                    "导出成功",
-                    f"日志已导出到:\n{file_path}"
-                )
+                        f.write(
+                            f"[{entry['timestamp']}] [{entry['type'].upper()}] {entry['raw_message']}\n"
+                        )
+
+                QMessageBox.information(self, "导出成功", f"日志已导出到:\n{file_path}")
                 logger.info(f"日志已导出到：{file_path}")
             except Exception as e:
                 QMessageBox.critical(self, "导出失败", f"导出日志失败:\n{e}")
@@ -1233,7 +1255,9 @@ class MainWindow(QMainWindow):
         }
         progress_value, detail = stage_progress.get(stage, (10, "正在处理"))
         self.stage_indicator.set_stage_progress(stage_index, progress_value, detail)
-        self._set_status(stage_status.get(stage, "构建进行中"), "#1890ff", detail, priority=80, token="build")
+        self._set_status(
+            stage_status.get(stage, "构建进行中"), "#1890ff", detail, priority=80, token="build"
+        )
 
     def on_task_finished(self, result: dict):
         """任务完成."""
@@ -1249,16 +1273,20 @@ class MainWindow(QMainWindow):
                 for file_info in result["output_files"]:
                     self.append_log(
                         f"{file_info.get('filename', 'unknown')} -> {file_info.get('path', 'unknown')}",
-                        "info"
+                        "info",
                     )
-            
+
             # 更新状态栏显示输出文件数量
             file_count = len(result.get("output_files", []))
-            self._set_status("构建完成", "#52c41a", f"已生成 {file_count} 个文件", priority=70, token="build")
+            self._set_status(
+                "构建完成", "#52c41a", f"已生成 {file_count} 个文件", priority=70, token="build"
+            )
         else:
             self.append_log(f"知识构建失败：{result.get('error', 'unknown')}", "error")
             self.stage_indicator.set_stage_failed(self.stage_indicator.get_current_stage())
-            self._set_status("构建失败", "#ff4d4f", result.get("error", "未知错误"), priority=90, token="build")
+            self._set_status(
+                "构建失败", "#ff4d4f", result.get("error", "未知错误"), priority=90, token="build"
+            )
 
         self._save_config()
         self._refresh_idle_status()
@@ -1302,24 +1330,23 @@ class MainWindow(QMainWindow):
     def closeEvent(self, event):
         """窗口关闭."""
         self._save_config()
-        
+
         if self.worker and self.worker.isRunning():
             self.worker.terminate()
             self.worker.wait()
-        
+
         if hasattr(self, "hardware_monitor"):
             self.hardware_monitor.stop_monitoring()
-        
+
         if hasattr(self, "model_manager"):
             self.model_manager.stop_download()
-        
+
         event.accept()
 
 
 def run_ui():
     """运行 UI."""
-    from loguru import logger
-    
+
     app = QApplication(sys.argv)
     window = MainWindow()
     window.show()

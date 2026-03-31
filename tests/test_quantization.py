@@ -2,13 +2,15 @@
 
 import pytest
 
-from ikos.core.hardware_detector import HardwareInfo, HardwareTier
-from ikos.core.quantization_config import (QuantizationConfig,
-                                           QuantizationLevel,
-                                           QuantizationLoader,
-                                           QuantizationRecommendation,
-                                           auto_recommend_quantization,
-                                           get_quantization_config)
+from ikos.core.hardware_detector import HardwareInfo
+from ikos.core.quantization_config import (
+    QuantizationConfig,
+    QuantizationLevel,
+    QuantizationLoader,
+    QuantizationRecommendation,
+    auto_recommend_quantization,
+    get_quantization_config,
+)
 
 
 class TestQuantizationLevel:
@@ -29,9 +31,9 @@ class TestQuantizationConfig:
     def test_get_all_configs(self):
         """测试获取所有配置."""
         configs = QuantizationConfig.get_all_configs()
-        
+
         assert len(configs) == 5
-        
+
         levels = [c.level for c in configs]
         assert QuantizationLevel.NF4 in levels
         assert QuantizationLevel.INT4 in levels
@@ -55,7 +57,7 @@ class TestQuantizationConfig:
         """测试配置字符串表示."""
         config = QuantizationConfig.get_all_configs()[0]  # NF4
         config_str = str(config)
-        
+
         assert "NF4" in config_str
         assert "4bit" in config_str
         assert "显存" in config_str
@@ -68,7 +70,7 @@ class TestQuantizationRecommendation:
         """测试推荐器初始化."""
         hardware_info = HardwareInfo(gpu_memory_gb=8.0)
         recommender = QuantizationRecommendation(hardware_info)
-        
+
         assert recommender.hardware_info == hardware_info
         assert recommender.available_memory > 0
 
@@ -77,9 +79,9 @@ class TestQuantizationRecommendation:
         # 8GB 显存场景
         hardware_info = HardwareInfo(gpu_memory_gb=8.0)
         recommender = QuantizationRecommendation(hardware_info)
-        
+
         config = recommender.recommend("qwen3.5:7b")
-        
+
         # 8GB 显存应该推荐 INT8 或 NF4
         assert config.level in [QuantizationLevel.INT8, QuantizationLevel.NF4]
 
@@ -88,9 +90,9 @@ class TestQuantizationRecommendation:
         # 4GB 显存场景
         hardware_info = HardwareInfo(gpu_memory_gb=4.0)
         recommender = QuantizationRecommendation(hardware_info)
-        
+
         config = recommender.recommend("qwen3.5:7b")
-        
+
         # 4GB 显存应该推荐 NF4
         assert config.level == QuantizationLevel.NF4
 
@@ -99,9 +101,9 @@ class TestQuantizationRecommendation:
         # 24GB 显存场景
         hardware_info = HardwareInfo(gpu_memory_gb=24.0)
         recommender = QuantizationRecommendation(hardware_info)
-        
+
         config = recommender.recommend("qwen3.5:7b")
-        
+
         # 24GB 显存可以推荐 FP16 或 FP32
         assert config.level in [QuantizationLevel.FP16, QuantizationLevel.FP32]
 
@@ -109,9 +111,9 @@ class TestQuantizationRecommendation:
         """测试推荐表生成."""
         hardware_info = HardwareInfo(gpu_memory_gb=8.0)
         recommender = QuantizationRecommendation(hardware_info)
-        
+
         table = recommender.get_recommendation_table("qwen3.5:7b")
-        
+
         assert isinstance(table, str)
         assert "7B" in table or "7.0" in table
         assert "NF4" in table
@@ -125,19 +127,20 @@ class TestQuantizationLoader:
     def test_get_load_config_nf4(self):
         """测试 NF4 加载配置."""
         config = QuantizationConfig.get_all_configs()[0]  # NF4
-        
+
         load_config = QuantizationLoader.get_load_config(config, "test_model")
-        
+
         assert load_config["pretrained_model_name_or_path"] == "test_model"
         assert "load_in_4bit" in load_config or load_config["torch_dtype"] is not None
 
     def test_get_load_config_fp16(self):
         """测试 FP16 加载配置."""
         config = QuantizationConfig.get_all_configs()[3]  # FP16
-        
+
         load_config = QuantizationLoader.get_load_config(config, "test_model")
-        
+
         import torch
+
         assert load_config["torch_dtype"] == torch.float16
 
 

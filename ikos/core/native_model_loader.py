@@ -1,13 +1,12 @@
 """原生模型加载器 - 从魔塔社区/HuggingFace 加载模型."""
 
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from loguru import logger
 
 from .hardware_detector import HardwareInfo
-from .quantization_config import (QuantizationConfig, QuantizationLoader,
-                                  auto_recommend_quantization)
+from .quantization_config import QuantizationConfig, QuantizationLoader, auto_recommend_quantization
 from .vram_manager import VRAMManager
 
 
@@ -24,9 +23,9 @@ class NativeModelLoader:
 
     def __init__(
         self,
-        cache_dir: Optional[str] = None,
-        hardware_info: Optional[HardwareInfo] = None,
-        vram_manager: Optional[VRAMManager] = None,
+        cache_dir: str | None = None,
+        hardware_info: HardwareInfo | None = None,
+        vram_manager: VRAMManager | None = None,
         preferred_source: str = "auto",
     ):
         """初始化模型加载器.
@@ -53,7 +52,7 @@ class NativeModelLoader:
         self,
         model_name: str,
         revision: str = "main",
-        quantization: Optional[str] = None,
+        quantization: str | None = None,
     ) -> Path:
         """下载模型.
 
@@ -116,8 +115,8 @@ class NativeModelLoader:
     def load_model(
         self,
         model_name: str,
-        model_path: Optional[Path] = None,
-        quantization: Optional[str] = None,
+        model_path: Path | None = None,
+        quantization: str | None = None,
         revision: str = "main",
     ) -> tuple[Any, Any]:
         """加载模型.
@@ -155,14 +154,13 @@ class NativeModelLoader:
         if self.vram_manager:
             model_size = self._estimate_model_size(model_name, quant_config)
             if not self.vram_manager.allocate(model_size, model_name):
-                logger.warning(f"显存不足，尝试 CPU-GPU 混合加载")
+                logger.warning("显存不足，尝试 CPU-GPU 混合加载")
 
         # 获取加载配置
         load_config = QuantizationLoader.get_load_config(quant_config, str(model_path))
 
         # 加载模型和分词器
         try:
-            import torch
             from transformers import AutoModelForCausalLM, AutoTokenizer
 
             # 加载分词器
@@ -330,7 +328,7 @@ class NativeModelLoader:
         """
         return list(self._loaded_models.keys())
 
-    def get_model_info(self, model_name: str) -> Optional[dict]:
+    def get_model_info(self, model_name: str) -> dict | None:
         """获取模型信息.
 
         Args:
@@ -361,8 +359,8 @@ class NativeModelLoader:
 
 def load_native_model(
     model_name: str,
-    cache_dir: Optional[str] = None,
-    quantization: Optional[str] = None,
+    cache_dir: str | None = None,
+    quantization: str | None = None,
     **kwargs: Any,
 ) -> tuple[Any, Any]:
     """便捷函数：加载原生模型.

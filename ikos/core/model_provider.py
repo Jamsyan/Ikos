@@ -50,9 +50,7 @@ class ModelProvider(ABC):
         pass
 
     @abstractmethod
-    def call_batch(
-        self, prompt: str, models: list[str], **kwargs: Any
-    ) -> list[ModelResponse]:
+    def call_batch(self, prompt: str, models: list[str], **kwargs: Any) -> list[ModelResponse]:
         """批量调用多个模型.
 
         Args:

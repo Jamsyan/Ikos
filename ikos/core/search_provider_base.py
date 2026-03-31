@@ -9,9 +9,7 @@ class SearchProvider(ABC):
     """搜索引擎抽象接口."""
 
     @abstractmethod
-    def search(
-        self, query: str, max_results: int = 10, engine: str = "auto"
-    ) -> list[SearchResult]:
+    def search(self, query: str, max_results: int = 10, engine: str = "auto") -> list[SearchResult]:
         """执行搜索."""
         pass
 
