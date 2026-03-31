@@ -211,12 +211,20 @@ class ModelManagerPanel(QGroupBox):
             from ikos.core import NativeModelLoader
 
             loader = NativeModelLoader()
-            cached = loader.get_cached_models()
+            # 使用 get_cached_models 或返回空列表
+            try:
+                cached = loader.get_cached_models()
+            except AttributeError:
+                # 如果方法不存在，返回空列表
+                cached = []
 
             self.model_list.clear()
             for model in cached:
-                item = QListWidgetItem(model.get("name", "Unknown"))
-                item.setData(1, model)  # 存储完整信息
+                if isinstance(model, dict):
+                    item = QListWidgetItem(model.get("name", "Unknown"))
+                    item.setData(1, model)  # 存储完整信息
+                else:
+                    item = QListWidgetItem(str(model))
                 self.model_list.addItem(item)
 
             logger.info(f"已刷新 {len(cached)} 个缓存模型")
